@@ -1,0 +1,269 @@
+# Tkllm-darija — Moroccan Darija Data Factory
+
+> **A crowdsourced, production-grade platform for collecting, processing, and delivering high-quality Moroccan Arabic (Darija) datasets as a premium Data-as-a-Service (DaaS) for AI companies.**
+
+Tkllm-darija bridges the critical gap between Moroccan dialect data and modern AI systems. The platform delivers ethically sourced, culturally authentic, and continuously refreshed datasets to AI labs, enterprises, and governments building production-grade models for speech recognition, machine translation, virtual assistants, customer service automation, and more.
+
+Built with a focus on **scale**, **quality**, **cultural authenticity**, and **full regulatory compliance** (Morocco Law 09-08 / CNDP + GDPR-aligned practices).
+
+---
+
+## Table of Contents
+
+- [Key Features](#-key-features)
+- [Platform Overview](#-platform-overview)
+- [Technical Architecture](#️-technical-architecture)
+- [Project Structure](#-project-structure)
+- [Getting Started](#-getting-started)
+- [Tech Stack](#-tech-stack)
+- [License](#-license)
+- [Contributing](#-contributing)
+- [Author](#-author)
+
+---
+
+## ✨ Key Features
+
+### For Contributors (Mobile-First App)
+- **Voice Recording** — Real-life scenario prompts: taxi orders, souk negotiations, medical consultations, code-switched conversations, and more
+- **AI-Assisted Transcription** — Automated first pass + human correction in Arabizi/Latin or Arabic script
+- **Rich Annotation Tasks** — Text labeling, translation, sentiment analysis, named-entity recognition, image/video description
+- **Built-in Darija AI Tutor** — Free chatbot for language practice and contributor onboarding
+- **Gamification & Rewards** — Streaks, leaderboards, and instant payouts via Orange Money, Inwi Money, or international transfer options
+- **Demographic Metadata** — Regional, age, gender, and accent data collected with explicit, granular consent
+
+### For AI Companies (B2B Portal)
+- **Curated Datasets** — Speech-to-text pairs, parallel corpora, and fully annotated data packages
+- **Custom Collection Campaigns** — On-demand data collection tailored to specific domains or use cases
+- **Real-Time API Access** — Live data feed for continuous model improvement
+- **Domain-Specific Packs** — Banking, healthcare, e-commerce, tourism, and legal verticals
+- **Quality Assurance** — Human-in-the-loop validation with transparent quality scoring
+- **Benchmark Suites** — Standardized evaluation tools for Darija NLP and ASR models
+
+---
+
+## 🚀 Platform Overview
+
+Tkllm-darija consists of three tightly integrated layers:
+
+| Layer | Description |
+|---|---|
+| **Contributor App** | Mobile-first (Flutter) and web (Next.js) interface for data collection and annotation |
+| **Data Pipeline** | Backend processing, ML-assisted transcription, quality scoring, and dataset versioning |
+| **B2B Portal & API** | Secure portal and REST/GraphQL APIs for dataset access and enterprise integrations |
+
+---
+
+## 🏗️ Technical Architecture
+
+Tkllm-darija follows a **scalable, cloud-native, microservices-oriented** architecture designed for high-concurrency voice uploads, low-latency mobile experience, and secure, auditable data pipelines.
+
+```
+Clients (Mobile / Web)
+        │
+        ▼
+API Gateway  (Kong / Traefik)
+        │
+        ▼
+Backend Services  (Kubernetes)
+  ├── User & Contributor Service
+  ├── Task & Data Service
+  └── Payment & Reward Service
+        │
+        ▼
+Data Pipeline Layer
+  ├── Audio Processing Worker
+  ├── ML Annotation & Training
+  └── Data Export & API
+        │
+        ▼
+Storage & Databases
+  ├── PostgreSQL + TimescaleDB
+  ├── Cloud Object Storage (S3-compatible)
+  └── Vector Store (Pinecone / Weaviate)
+```
+
+### Core Components
+
+#### 1. Frontend
+| Component | Technology |
+|---|---|
+| Mobile App (iOS + Android) | Flutter 3.24+ — single codebase, offline support, native audio recording |
+| Web Dashboard | Next.js 15 + TypeScript + Tailwind CSS |
+| Admin / B2B Portal | Next.js with role-based access control |
+
+#### 2. Backend
+| Component | Technology |
+|---|---|
+| API | NestJS (TypeScript) or FastAPI (Python) — REST + GraphQL |
+| Authentication | Supabase Auth / Keycloak — OAuth2 + JWT, phone/email, Moroccan number support |
+| User & Contributor Service | Profile management, consent tracking, metadata storage |
+| Task Engine | Dynamic prompt distribution and contributor matching |
+| Quality Control Workflow | Multi-stage human + automated validation |
+| Payment & Reward System | Integration with Moroccan mobile money APIs |
+
+#### 3. ML & Data Layer
+| Component | Technology |
+|---|---|
+| ASR Bootstrap | Fine-tuned Whisper / wav2vec 2.0 on DVoice, DODa, AtlasIA datasets |
+| Transcription Workers | Whisper-large-v3 / SpeechBrain — GPU workers on RunPod / Vast.ai / AWS SageMaker |
+| Annotation Pipeline | Human-in-the-loop with active learning queue |
+| Vector Store | Pinecone / Weaviate for semantic data search |
+| Dataset Management | Hugging Face Datasets + DVC for versioning |
+
+#### 4. Storage
+| Data Type | Solution |
+|---|---|
+| Audio Files | Supabase Storage / AWS S3 / Cloudflare R2 — AES-256 encryption at rest |
+| Metadata & Transcripts | PostgreSQL + PostGIS (geo) + TimescaleDB (time-series analytics) |
+| Processed Datasets | MinIO (S3-compatible) in Parquet / JSONL format |
+
+#### 5. Infrastructure & DevOps
+| Concern | Technology |
+|---|---|
+| Orchestration | Kubernetes (EKS / GKE / DigitalOcean) or Serverless (Vercel + Cloud Run) |
+| CI/CD | GitHub Actions |
+| Monitoring | Prometheus + Grafana + Sentry |
+| Logging | ELK Stack or Loki |
+| Background Jobs | Celery (Python) / BullMQ (Node) + Redis |
+| Caching | Redis |
+
+#### 6. Security & Compliance
+- **Encryption** — TLS 1.3 in transit; AES-256 at rest for all audio and personal data
+- **Consent Management** — Explicit, granular, revocable consent per data category
+- **Anonymization** — Automated pseudonymization and anonymization pipelines
+- **Audit Logging** — Full audit trail for all data access and exports
+- **Regulatory Compliance** — Morocco Law 09-08 (CNDP) + GDPR-aligned practices
+
+---
+
+## 📁 Project Structure
+
+```
+Tkllm-darija/
+├── apps/
+│   ├── mobile/                   # Flutter app (iOS + Android)
+│   │   ├── lib/
+│   │   ├── assets/
+│   │   └── pubspec.yaml
+│   └── web/                      # Next.js web + admin/B2B portal
+│       ├── app/
+│       ├── components/
+│       └── package.json
+├── backend/
+│   └── nestjs/                   # NestJS API (or fastapi/)
+│       ├── src/
+│       │   ├── modules/          # user, task, data, payment, quality
+│       │   ├── common/           # guards, interceptors, filters
+│       │   ├── config/
+│       │   └── main.ts
+│       ├── prisma/               # Schema & migrations (or Alembic)
+│       └── Dockerfile
+├── services/
+│   ├── asr-worker/               # Python FastAPI + Hugging Face Inference
+│   ├── data-pipeline/            # ETL jobs (Prefect / Dagster)
+│   └── quality-engine/           # Quality scoring & active learning
+├── infrastructure/
+│   ├── terraform/                # Infrastructure-as-Code
+│   ├── k8s/                      # Kubernetes manifests
+│   └── docker-compose.yml        # Local development stack
+├── datasets/                     # Scripts to ingest public Darija data (DODa, DVoice, etc.)
+├── docs/                         # Extended documentation
+├── scripts/                      # Utility & automation scripts
+├── .github/workflows/            # CI/CD pipelines
+├── README.md
+├── CONTRIBUTING.md
+└── LICENSE
+```
+
+---
+
+## 🏁 Getting Started
+
+### Prerequisites
+
+| Requirement | Version |
+|---|---|
+| Node.js | 20+ |
+| Flutter | 3.24+ |
+| Python | 3.12+ |
+| Docker & Docker Compose | Latest stable |
+| PostgreSQL, Redis, MinIO | Via Docker (recommended) |
+
+### 1. Clone the Repository
+
+```bash
+git clone https://github.com/biko2020/Tkllm-darija
+cd Tkllm-darija
+```
+
+### 2. Start the Local Development Stack
+
+The recommended approach uses Docker Compose to spin up all services:
+
+```bash
+docker-compose up -d
+```
+
+### 3. Mobile App Setup
+
+```bash
+cd apps/mobile
+flutter pub get
+flutter run
+```
+
+### 4. Web & Backend Setup
+
+See [`docs/local-setup.md`](docs/local-setup.md) for detailed step-by-step instructions, including environment variable configuration and database seeding.
+
+---
+
+## 🛠️ Tech Stack
+
+| Layer | Technology |
+|---|---|
+| Mobile | Flutter 3.24+ |
+| Web / Admin Portal | Next.js 15 + TypeScript + Tailwind CSS |
+| Backend API | NestJS (TypeScript) / FastAPI (Python) |
+| Database | PostgreSQL + TimescaleDB + Redis |
+| Object Storage | S3-compatible (Cloudflare R2 / MinIO / AWS S3) |
+| ML / ASR | Hugging Face Transformers, Whisper, wav2vec 2.0 |
+| Orchestration | Kubernetes / Docker Compose |
+| Payments | Moroccan mobile money APIs (Orange Money, Inwi Money) |
+| Monitoring | Prometheus + Grafana + Sentry |
+
+---
+
+## 📜 License
+
+The open-source community edition of Tkllm-darija is licensed under the **GNU Affero General Public License v3.0 (AGPL-3.0)**.
+
+Commercial B2B data service features and enterprise deployments are available under a **separate commercial license**. Please contact the author for details.
+
+---
+
+## 🤝 Contributing
+
+Contributions from the Moroccan developer and AI community are warmly welcome.
+
+Please read [`CONTRIBUTING.md`](CONTRIBUTING.md) for guidelines on submitting issues, pull requests, and dataset contributions. Join the conversation on the project's GitHub repository.
+
+---
+
+*Made with ❤️ for Morocco's linguistic heritage and the future of inclusive AI.*
+
+---
+
+## 👤 Author
+
+**Brahim Ait Oufkir**
+*Data Engineer · Big Data Developer · Full Stack Developer*
+
+[![Email](https://img.shields.io/badge/Email-aitoufkirbrahimab%40gmail.com-red?logo=gmail)](mailto:aitoufkirbrahimab@gmail.com)
+[![LinkedIn](https://img.shields.io/badge/LinkedIn-brahim--ait--oufkir-blue?logo=linkedin)](https://linkedin.com/in/brahim-ait-oufkir)
+[![GitHub](https://img.shields.io/badge/GitHub-biko2020-black?logo=github)](https://github.com/biko2020)
+
+---
+
+> 📌 **Note:** This README is designed to serve developers, contributors, and potential B2B partners. It positions Tkllm-darija as both a community-driven initiative and a serious commercial data platform.
