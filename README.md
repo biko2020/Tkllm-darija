@@ -178,8 +178,14 @@ Tkllm-darija/
 │   ├── quality-engine/                # Scoring, validation & active learning
 │   │   ├── src/
 │   │   └── Dockerfile
-│   └── payment-service/               # Moroccan mobile money integrations
+│   ├── analytics-service/             # Contributor activity, data quality & growth metrics
+│   │   ├── src/
+│   │   └── Dockerfile
+│   └── financial-service/             # Payouts, wallet system, fraud detection
 │       ├── src/
+│       │   ├── providers/             # CMI, Orange Money, Inwi Money adapters
+│       │   ├── wallet/                # Contributor wallet & balance management
+│       │   └── fraud/                 # Fraud detection rules & monitoring
 │       └── Dockerfile
 │
 ├── packages/                          # Shared internal libraries (monorepo)
@@ -190,16 +196,33 @@ Tkllm-darija/
 ├── ml/                                # ML research & model development
 │   ├── notebooks/                     # Jupyter notebooks for exploration & analysis
 │   ├── training/                      # Training scripts & experiment configs
-│   └── evaluation/                    # Benchmark & evaluation scripts
+│   ├── evaluation/                    # Benchmark & evaluation scripts
+│   ├── feature-store/                 # Reusable ML features (embeddings, speaker features, normalized text)
+│   │   ├── embeddings/
+│   │   ├── speaker/
+│   │   └── text/
+│   └── experiments/                   # Experiment tracking (MLflow / Weights & Biases)
+│       ├── tracking/                  # Run configs, metrics, artifact pointers
+│       └── mlflow.yaml                # or wandb config
 │
-├── data/                              # Dataset management
+├── data/                              # Dataset management & versioning
 │   ├── ingestion/                     # Scripts to pull DODa, DVoice, AtlasIA, etc.
 │   ├── schemas/                       # Annotation schemas & data contracts
-│   └── samples/                       # Anonymized samples for dev & testing
+│   ├── samples/                       # Anonymized samples for dev & testing
+│   ├── registry/                      # Dataset versions, metadata & lineage tracking
+│   │   ├── datasets.yaml              # Central registry of all published datasets
+│   │   └── lineage/                   # Provenance records per dataset version
+│   └── versions/                      # Versioned dataset snapshots (DVC / LakeFS managed)
+│       ├── v1/
+│       ├── v2/
+│       └── .dvc/                      # DVC cache & remote pointers
 │
 ├── infrastructure/
 │   ├── terraform/                     # Infrastructure-as-Code (cloud resources)
 │   ├── k8s/                           # Kubernetes manifests
+│   ├── messaging/                     # Async communication layer between API & workers
+│   │   ├── kafka/                     # Kafka topics & consumer group configs
+│   │   └── queues/                    # BullMQ / Redis queue definitions & job schemas
 │   └── docker/                        # Dockerfiles & Docker Compose files
 │       └── docker-compose.yml         # Local development stack
 │
@@ -283,9 +306,13 @@ See [`docs/local-setup.md`](docs/local-setup.md) for detailed instructions, envi
 | Database | PostgreSQL + TimescaleDB + Redis |
 | Object Storage | S3-compatible (Cloudflare R2 / MinIO / AWS S3) |
 | ML / ASR | Hugging Face Transformers, Whisper, wav2vec 2.0 |
-| ML Experimentation | Jupyter, DVC, Prefect / Dagster |
+| ML Experimentation | Jupyter, MLflow / Weights & Biases |
+| Feature Store | Custom (embeddings, speaker features, normalized text) |
+| Dataset Versioning | DVC + LakeFS — registry, lineage, versioned snapshots |
+| Async Messaging | Kafka + BullMQ / Redis queues |
+| Analytics | Custom analytics service — contributor & data quality metrics |
+| Financial | CMI, Orange Money, Inwi Money — wallet + fraud detection |
 | Orchestration | Kubernetes / Docker Compose |
-| Payments | Moroccan mobile money APIs (Orange Money, Inwi Money) |
 | Monitoring | Prometheus + Grafana + Sentry |
 
 ---
