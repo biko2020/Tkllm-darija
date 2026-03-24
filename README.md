@@ -151,14 +151,19 @@ Tkllm-darija/
 │   │   ├── assets/
 │   │   └── pubspec.yaml
 │   ├── web-contributor/               # Next.js — contributor-facing web app
-│   │   ├── app/
+│   │   ├── .env
+│   │   ├── .env.example
 │   │   ├── components/
 │   │   └── package.json
 │   ├── web-b2b/                       # Next.js — enterprise portal & admin dashboard
+│   │   ├── .env
+│   │   ├── .env.example
 │   │   ├── app/
 │   │   ├── components/
 │   │   └── package.json
 │   └── api/                           # NestJS — main application API (REST + GraphQL)
+│       ├── .env
+│       ├── .env.example
 │       ├── src/
 │       │   ├── modules/               # user, task, data, quality, auth
 │       │   ├── common/                # guards, interceptors, filters, pipes
@@ -169,19 +174,29 @@ Tkllm-darija/
 │
 ├── services/                          # Standalone background services & workers
 │   ├── asr-worker/                    # Whisper / wav2vec transcription worker
+│   │   ├── .env
+│   │   ├── .env.example
 │   │   ├── src/
 │   │   ├── models/
 │   │   └── Dockerfile
 │   ├── data-pipeline/                 # ETL jobs (Prefect / Dagster)
+│   │   ├── .env
+│   │   ├── .env.example
 │   │   ├── flows/
 │   │   └── Dockerfile
 │   ├── quality-engine/                # Scoring, validation & active learning
+│   │   ├── .env
+│   │   ├── .env.example
 │   │   ├── src/
 │   │   └── Dockerfile
 │   ├── analytics-service/             # Contributor activity, data quality & growth metrics
+│   │   ├── .env
+│   │   ├── .env.example
 │   │   ├── src/
 │   │   └── Dockerfile
 │   └── financial-service/             # Payouts, wallet system, fraud detection
+│       ├── .env
+│   │   ├── .env.example
 │       ├── src/
 │       │   ├── providers/             # CMI, Orange Money, Inwi Money adapters
 │       │   ├── wallet/                # Contributor wallet & balance management
@@ -232,6 +247,8 @@ Tkllm-darija/
 │   └── workflows/                     # CI/CD pipelines
 ├── README.md
 ├── .gitignore
+├──.env.example
+├──.env
 ├── CONTRIBUTING.md
 ├── turbo.json                         # Turborepo monorepo config
 └── LICENSE
