@@ -1,0 +1,63 @@
+# Node.js
+node_modules/
+dist/
+.next/
+out/
+build/
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+pnpm-debug.log*
+
+# Environment variables
+.env
+.env.*
+!.env.example
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Python / ML
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.venv/
+venv/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Data (IMPORTANT for your project)
+data/raw/
+data/processed/
+data/intermediate/
+
+# Models
+*.pt
+*.pth
+*.h5
+*.ckpt
+
+# Audio files
+*.wav
+*.mp3
+
+# Docker
+docker-compose.override.yml
+
+# Terraform
+.terraform/
+*.tfstate
+*.tfstate.backup
+
+# IDE
+.vscode/
+.idea/
+
+# Coverage
+coverage/

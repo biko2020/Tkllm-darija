@@ -231,6 +231,7 @@ Tkllm-darija/
 ├── .github/
 │   └── workflows/                     # CI/CD pipelines
 ├── README.md
+├── .gitignore
 ├── CONTRIBUTING.md
 ├── turbo.json                         # Turborepo monorepo config
 └── LICENSE
