@@ -48,9 +48,10 @@ Tkllm-darija consists of three tightly integrated layers:
 
 | Layer | Description |
 |---|---|
-| **Contributor App** | Mobile-first (Flutter) and web (Next.js) interface for data collection and annotation |
+| **Contributor App** | Mobile (Flutter) and web (`web-contributor`) interface for data collection and annotation |
+| **B2B Portal** | Dedicated enterprise portal (`web-b2b`) for dataset access, custom campaigns, and API management |
 | **Data Pipeline** | Backend processing, ML-assisted transcription, quality scoring, and dataset versioning |
-| **B2B Portal & API** | Secure portal and REST/GraphQL APIs for dataset access and enterprise integrations |
+| **Core API** | Unified REST + GraphQL API (`apps/api`) serving both contributor and B2B surfaces |
 
 ---
 
@@ -86,21 +87,21 @@ Storage & Databases
 ### Core Components
 
 #### 1. Frontend
-| Component | Technology |
-|---|---|
-| Mobile App (iOS + Android) | Flutter 3.24+ — single codebase, offline support, native audio recording |
-| Web Dashboard | Next.js 15 + TypeScript + Tailwind CSS |
-| Admin / B2B Portal | Next.js with role-based access control |
+| Component | App | Technology |
+|---|---|---|
+| Mobile App (iOS + Android) | `apps/mobile` | Flutter 3.24+ — single codebase, offline support, native audio recording |
+| Contributor Web App | `apps/web-contributor` | Next.js 15 + TypeScript + Tailwind CSS |
+| B2B Enterprise Portal | `apps/web-b2b` | Next.js 15 + TypeScript + Tailwind CSS — role-based access control |
 
 #### 2. Backend
-| Component | Technology |
-|---|---|
-| API | NestJS (TypeScript) or FastAPI (Python) — REST + GraphQL |
-| Authentication | Supabase Auth / Keycloak — OAuth2 + JWT, phone/email, Moroccan number support |
-| User & Contributor Service | Profile management, consent tracking, metadata storage |
-| Task Engine | Dynamic prompt distribution and contributor matching |
-| Quality Control Workflow | Multi-stage human + automated validation |
-| Payment & Reward System | Integration with Moroccan mobile money APIs |
+| Component | App / Service | Technology |
+|---|---|---|
+| Main API | `apps/api` | NestJS (TypeScript) — REST + GraphQL |
+| Authentication | `apps/api` | Supabase Auth / Keycloak — OAuth2 + JWT, phone/email, Moroccan number support |
+| User & Contributor Service | `apps/api` | Profile management, consent tracking, metadata storage |
+| Task Engine | `apps/api` | Dynamic prompt distribution and contributor matching |
+| Quality Control Workflow | `services/quality-engine` | Multi-stage human + automated validation |
+| Payment & Reward System | `services/payment-service` | Integration with Moroccan mobile money APIs |
 
 #### 3. ML & Data Layer
 | Component | Technology |
@@ -141,38 +142,74 @@ Storage & Databases
 
 ```
 Tkllm-darija/
-├── apps/
-│   ├── mobile/                   # Flutter app (iOS + Android)
+├── apps/                              # All deployable applications
+│   ├── mobile/                        # Flutter contributor app (iOS + Android)
 │   │   ├── lib/
+│   │   │   ├── features/              # Feature-first structure (auth, tasks, rewards)
+│   │   │   ├── shared/               # Shared widgets, utilities, constants
+│   │   │   └── main.dart
 │   │   ├── assets/
 │   │   └── pubspec.yaml
-│   └── web/                      # Next.js web + admin/B2B portal
-│       ├── app/
-│       ├── components/
-│       └── package.json
-├── backend/
-│   └── nestjs/                   # NestJS API (or fastapi/)
+│   ├── web-contributor/               # Next.js — contributor-facing web app
+│   │   ├── app/
+│   │   ├── components/
+│   │   └── package.json
+│   ├── web-b2b/                       # Next.js — enterprise portal & admin dashboard
+│   │   ├── app/
+│   │   ├── components/
+│   │   └── package.json
+│   └── api/                           # NestJS — main application API (REST + GraphQL)
 │       ├── src/
-│       │   ├── modules/          # user, task, data, payment, quality
-│       │   ├── common/           # guards, interceptors, filters
+│       │   ├── modules/               # user, task, data, quality, auth
+│       │   ├── common/                # guards, interceptors, filters, pipes
 │       │   ├── config/
 │       │   └── main.ts
-│       ├── prisma/               # Schema & migrations (or Alembic)
+│       ├── prisma/                    # Schema & migrations
 │       └── Dockerfile
-├── services/
-│   ├── asr-worker/               # Python FastAPI + Hugging Face Inference
-│   ├── data-pipeline/            # ETL jobs (Prefect / Dagster)
-│   └── quality-engine/           # Quality scoring & active learning
+│
+├── services/                          # Standalone background services & workers
+│   ├── asr-worker/                    # Whisper / wav2vec transcription worker
+│   │   ├── src/
+│   │   ├── models/
+│   │   └── Dockerfile
+│   ├── data-pipeline/                 # ETL jobs (Prefect / Dagster)
+│   │   ├── flows/
+│   │   └── Dockerfile
+│   ├── quality-engine/                # Scoring, validation & active learning
+│   │   ├── src/
+│   │   └── Dockerfile
+│   └── payment-service/               # Moroccan mobile money integrations
+│       ├── src/
+│       └── Dockerfile
+│
+├── packages/                          # Shared internal libraries (monorepo)
+│   ├── types/                         # Shared TypeScript types & interfaces
+│   ├── ui/                            # Shared design system components
+│   └── validators/                    # Shared validation schemas (Zod)
+│
+├── ml/                                # ML research & model development
+│   ├── notebooks/                     # Jupyter notebooks for exploration & analysis
+│   ├── training/                      # Training scripts & experiment configs
+│   └── evaluation/                    # Benchmark & evaluation scripts
+│
+├── data/                              # Dataset management
+│   ├── ingestion/                     # Scripts to pull DODa, DVoice, AtlasIA, etc.
+│   ├── schemas/                       # Annotation schemas & data contracts
+│   └── samples/                       # Anonymized samples for dev & testing
+│
 ├── infrastructure/
-│   ├── terraform/                # Infrastructure-as-Code
-│   ├── k8s/                      # Kubernetes manifests
-│   └── docker-compose.yml        # Local development stack
-├── datasets/                     # Scripts to ingest public Darija data (DODa, DVoice, etc.)
-├── docs/                         # Extended documentation
-├── scripts/                      # Utility & automation scripts
-├── .github/workflows/            # CI/CD pipelines
+│   ├── terraform/                     # Infrastructure-as-Code (cloud resources)
+│   ├── k8s/                           # Kubernetes manifests
+│   └── docker/                        # Dockerfiles & Docker Compose files
+│       └── docker-compose.yml         # Local development stack
+│
+├── docs/                              # Architecture decisions, API docs, guides
+├── scripts/                           # Dev utilities & automation
+├── .github/
+│   └── workflows/                     # CI/CD pipelines
 ├── README.md
 ├── CONTRIBUTING.md
+├── turbo.json                         # Turborepo monorepo config
 └── LICENSE
 ```
 
@@ -188,6 +225,7 @@ Tkllm-darija/
 | Flutter | 3.24+ |
 | Python | 3.12+ |
 | Docker & Docker Compose | Latest stable |
+| Turborepo | Latest (`npm i -g turbo`) |
 | PostgreSQL, Redis, MinIO | Via Docker (recommended) |
 
 ### 1. Clone the Repository
@@ -213,9 +251,23 @@ flutter pub get
 flutter run
 ```
 
-### 4. Web & Backend Setup
+### 4. Web Apps & API Setup
 
-See [`docs/local-setup.md`](docs/local-setup.md) for detailed step-by-step instructions, including environment variable configuration and database seeding.
+```bash
+# Install dependencies across all apps (requires Turborepo)
+npx turbo install
+
+# Run contributor web app
+cd apps/web-contributor && npm run dev
+
+# Run B2B portal
+cd apps/web-b2b && npm run dev
+
+# Run API
+cd apps/api && npm run start:dev
+```
+
+See [`docs/local-setup.md`](docs/local-setup.md) for detailed instructions, environment variable configuration, and database seeding.
 
 ---
 
@@ -224,11 +276,14 @@ See [`docs/local-setup.md`](docs/local-setup.md) for detailed step-by-step instr
 | Layer | Technology |
 |---|---|
 | Mobile | Flutter 3.24+ |
-| Web / Admin Portal | Next.js 15 + TypeScript + Tailwind CSS |
-| Backend API | NestJS (TypeScript) / FastAPI (Python) |
+| Contributor Web App | Next.js 15 + TypeScript + Tailwind CSS |
+| B2B Enterprise Portal | Next.js 15 + TypeScript + Tailwind CSS |
+| Backend API | NestJS (TypeScript) — REST + GraphQL |
+| Shared Libraries | Turborepo monorepo — types, UI, validators |
 | Database | PostgreSQL + TimescaleDB + Redis |
 | Object Storage | S3-compatible (Cloudflare R2 / MinIO / AWS S3) |
 | ML / ASR | Hugging Face Transformers, Whisper, wav2vec 2.0 |
+| ML Experimentation | Jupyter, DVC, Prefect / Dagster |
 | Orchestration | Kubernetes / Docker Compose |
 | Payments | Moroccan mobile money APIs (Orange Money, Inwi Money) |
 | Monitoring | Prometheus + Grafana + Sentry |
