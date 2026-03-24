@@ -1,63 +1,134 @@
-# Node.js
-node_modules/
-dist/
-.next/
-out/
-build/
-
-# Logs
-logs/
+#######################################
+# ROOT & GENERAL
+#######################################
+.DS_Store
+Thumbs.db
 *.log
-npm-debug.log*
-yarn-debug.log*
-pnpm-debug.log*
+logs/
 
-# Environment variables
+#######################################
+# ENV FILES (CRITICAL)
+#######################################
 .env
 .env.*
 !.env.example
 
-# OS files
-.DS_Store
-Thumbs.db
+#######################################
+# NODE / NEXT / TURBO
+#######################################
+node_modules/
+.pnpm-store/
+.next/
+out/
+dist/
+build/
+coverage/
 
-# Python / ML
+#######################################
+# TURBO
+#######################################
+.turbo/
+
+#######################################
+# FLUTTER (mobile app)
+#######################################
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.packages
+.pub-cache/
+build/
+ios/Pods/
+android/.gradle/
+android/app/build/
+
+#######################################
+# PYTHON / ML
+#######################################
 __pycache__/
 *.pyc
 *.pyo
 *.pyd
 .venv/
 venv/
+env/
 
-# Jupyter
+#######################################
+# JUPYTER
+#######################################
 .ipynb_checkpoints/
 
-# Data (IMPORTANT for your project)
-data/raw/
-data/processed/
-data/intermediate/
-
-# Models
+#######################################
+# ML MODELS (VERY IMPORTANT)
+#######################################
 *.pt
 *.pth
 *.h5
 *.ckpt
+*.onnx
 
-# Audio files
+#######################################
+# DATA (DO NOT COMMIT RAW DATA)
+#######################################
+data/versions/*/raw/
+data/versions/*/processed/
+data/versions/*/intermediate/
+data/versions/*/audio/
+
+# Allow schemas + registry
+!data/schemas/
+!data/registry/
+!data/samples/
+
+#######################################
+# AUDIO FILES
+#######################################
 *.wav
 *.mp3
+*.flac
 
-# Docker
+#######################################
+# DOCKER
+#######################################
 docker-compose.override.yml
+*.env.docker
 
-# Terraform
+#######################################
+# TERRAFORM
+#######################################
 .terraform/
 *.tfstate
 *.tfstate.backup
 
+#######################################
+# KUBERNETES
+#######################################
+*.secret.yaml
+
+#######################################
 # IDE
+#######################################
 .vscode/
 .idea/
 
-# Coverage
-coverage/
+#######################################
+# PRISMA
+#######################################
+prisma/dev.db
+
+#######################################
+# ML EXPERIMENTS
+#######################################
+ml/experiments/tracking/*
+!ml/experiments/tracking/.gitkeep
+
+#######################################
+# FEATURE STORE CACHE
+#######################################
+ml/feature-store/**/cache/
+
+#######################################
+# TEMP FILES
+#######################################
+tmp/
+temp/
