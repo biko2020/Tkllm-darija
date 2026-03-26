@@ -142,115 +142,224 @@ Storage & Databases
 
 ```
 Tkllm-darija/
-├── apps/                              # All deployable applications
-│   ├── mobile/                        # Flutter contributor app (iOS + Android)
+├── apps/                                              # All deployable applications
+│   ├── mobile/                                        # Flutter contributor app (iOS + Android)
 │   │   ├── lib/
-│   │   │   ├── features/              # Feature-first structure (auth, tasks, rewards)
-│   │   │   ├── shared/               # Shared widgets, utilities, constants
+│   │   │   ├── features/                              # Feature-first structure (auth, tasks, rewards)
+│   │   │   ├── shared/                                # Shared widgets, utilities, constants
 │   │   │   └── main.dart
 │   │   ├── assets/
 │   │   └── pubspec.yaml
-│   ├── web-contributor/               # Next.js — contributor-facing web app
+│   ├── web-contributor/                               # Next.js — contributor-facing web app
 │   │   ├── .env
 │   │   ├── .env.example
 │   │   ├── components/
 │   │   └── package.json
-│   ├── web-b2b/                       # Next.js — enterprise portal & admin dashboard
+│   ├── web-b2b/                                       # Next.js — enterprise portal & admin dashboard
 │   │   ├── .env
 │   │   ├── .env.example
 │   │   ├── app/
 │   │   ├── components/
 │   │   └── package.json
-│   └── api/                           # NestJS — main application API (REST + GraphQL)
+│   └── api/                                           # NestJS — main application API (REST + GraphQL)
 │       ├── .env
 │       ├── .env.example
 │       ├── src/
-│       │   ├── modules/               # user, task, data, quality, auth
-│       │   ├── common/                # guards, interceptors, filters, pipes
+│       │   ├── modules/                               # user, task, data, quality, auth
+│       │   ├── common/                                # guards, interceptors, filters, pipes
 │       │   ├── config/
 │       │   └── main.ts
-│       ├── prisma/                    # Schema & migrations
+│       ├── prisma/                                    # Schema & migrations
 │       └── Dockerfile
 │
-├── services/                          # Standalone background services & workers
-│   ├── asr-worker/                    # Whisper / wav2vec transcription worker
+├── services/                                          # Standalone background services & workers
+│   ├── asr-worker/                                    # Whisper / wav2vec transcription worker
 │   │   ├── .env
 │   │   ├── .env.example
 │   │   ├── src/
 │   │   ├── models/
 │   │   └── Dockerfile
-│   ├── data-pipeline/                 # ETL jobs (Prefect / Dagster)
+│   ├── data-pipeline/                                 # ETL jobs (Prefect / Dagster)
 │   │   ├── .env
 │   │   ├── .env.example
 │   │   ├── flows/
 │   │   └── Dockerfile
-│   ├── quality-engine/                # Scoring, validation & active learning
+│   ├── quality-engine/                                # Scoring, validation & active learning
 │   │   ├── .env
 │   │   ├── .env.example
 │   │   ├── src/
 │   │   └── Dockerfile
-│   ├── analytics-service/             # Contributor activity, data quality & growth metrics
+│   ├── analytics-service/                            # Contributor activity, data quality & growth metrics
 │   │   ├── .env
 │   │   ├── .env.example
 │   │   ├── src/
 │   │   └── Dockerfile
-│   └── financial-service/             # Payouts, wallet system, fraud detection
+│   └── financial-service/                            # Payouts, wallet system, fraud detection
 │       ├── .env
-│   │   ├── .env.example
+│       ├── .env.example
 │       ├── src/
-│       │   ├── providers/             # CMI, Orange Money, Inwi Money adapters
-│       │   ├── wallet/                # Contributor wallet & balance management
-│       │   └── fraud/                 # Fraud detection rules & monitoring
+│       │   ├── providers/                            # CMI, Orange Money, Inwi Money adapters
+│       │   ├── wallet/                               # Contributor wallet & balance management
+│       │   └── fraud/                                # Fraud detection rules & monitoring
 │       └── Dockerfile
 │
-├── packages/                          # Shared internal libraries (monorepo)
-│   ├── types/                         # Shared TypeScript types & interfaces
-│   ├── ui/                            # Shared design system components
-│   └── validators/                    # Shared validation schemas (Zod)
+├── packages/                                         # Shared internal libraries (monorepo)
+│   ├── types/                                        # Shared TypeScript types & interfaces
+│   ├── ui/                                           # Shared design system components
+│   └── validators/                                   # Shared validation schemas (Zod)
 │
-├── ml/                                # ML research & model development
-│   ├── notebooks/                     # Jupyter notebooks for exploration & analysis
-│   ├── training/                      # Training scripts & experiment configs
-│   ├── evaluation/                    # Benchmark & evaluation scripts
-│   ├── feature-store/                 # Reusable ML features (embeddings, speaker features, normalized text)
+├── ml/                                               # ML research & model development
+│   ├── notebooks/                                    # Jupyter notebooks for exploration & analysis
+│   ├── training/                                     # Training scripts & experiment configs
+│   ├── evaluation/                                   # Benchmark & evaluation scripts
+│   ├── feature-store/                                # Reusable ML features (embeddings, speaker features, normalized text)
 │   │   ├── embeddings/
 │   │   ├── speaker/
 │   │   └── text/
-│   └── experiments/                   # Experiment tracking (MLflow / Weights & Biases)
-│       ├── tracking/                  # Run configs, metrics, artifact pointers
-│       └── mlflow.yaml                # or wandb config
+│   └── experiments/                                  # Experiment tracking (MLflow / Weights & Biases)
+│       ├── tracking/                                 # Run configs, metrics, artifact pointers
+│       └── mlflow.yaml                               # or wandb config
 │
-├── data/                              # Dataset management & versioning
-│   ├── ingestion/                     # Scripts to pull DODa, DVoice, AtlasIA, etc.
-│   ├── schemas/                       # Annotation schemas & data contracts
-│   ├── samples/                       # Anonymized samples for dev & testing
-│   ├── registry/                      # Dataset versions, metadata & lineage tracking
-│   │   ├── datasets.yaml              # Central registry of all published datasets
-│   │   └── lineage/                   # Provenance records per dataset version
-│   └── versions/                      # Versioned dataset snapshots (DVC / LakeFS managed)
+├── data/                                             # Dataset management & versioning
+│   ├── ingestion/                                    # Scripts to pull DODa, DVoice, AtlasIA, etc.
+│   ├── schemas/                                      # Annotation schemas & data contracts
+│   ├── samples/                                      # Anonymized samples for dev & testing
+│   ├── registry/                                     # Dataset versions, metadata & lineage tracking
+│   │   ├── datasets.yaml                             # Central registry of all published datasets
+│   │   └── lineage/                                  # Provenance records per dataset version
+│   └── versions/                                     # Versioned dataset snapshots (DVC / LakeFS managed)
 │       ├── v1/
 │       ├── v2/
-│       └── .dvc/                      # DVC cache & remote pointers
+│       └── .dvc/                                     # DVC cache & remote pointers
 │
 ├── infrastructure/
-│   ├── terraform/                     # Infrastructure-as-Code (cloud resources)
-│   ├── k8s/                           # Kubernetes manifests
-│   ├── messaging/                     # Async communication layer between API & workers
-│   │   ├── kafka/                     # Kafka topics & consumer group configs
-│   │   └── queues/                    # BullMQ / Redis queue definitions & job schemas
-│   └── docker/                        # Dockerfiles & Docker Compose files
-│       └── docker-compose.yml         # Local development stack
+│   ├── terraform/                                    # Infrastructure-as-Code for cloud (AWS/GCP/DO/etc.)
+│   │   └──                                           # Terraform modules, variables, environments (prod/staging/dev)
+│   │
+│   ├── k8s/                                          # Kubernetes manifests (deployment, scaling, networking, security)                             
+│   │   ├── base/                                     # Environment-agnostic base resources (shared across all environments)
+│   │   │   ├── kustomization.yaml                    # Root Kustomize file aggregating all base resources
+│   │   │   ├── namespace.yaml                        # Defines the tkllm-darija namespace
+│   │   │   ├── rbac/                                 # Role-Based Access Control (security & permissions)
+│   │   │   │   └── rbac.yaml                         # ServiceAccounts, Roles, ClusterRoles, IRSA bindings (AWS IAM integration)
+│   │   │   │
+│   │   │   ├── network-policies/                     # Zero-trust networking rules
+│   │   │   │   └── default-deny.yaml                 # Deny all traffic by default, allow only explicit service communication
+│   │   │   │
+│   │   │   ├── storage/                              # Persistent storage configuration
+│   │   │   │   └── pvcs.yaml                         # PersistentVolumeClaims for databases, caches, and ML storage
+│   │   │   │
+│   │   │   ├── configmaps/                           # Non-sensitive configuration shared across services
+│   │   │   │   ├── common.yaml                       # Shared configs (Kafka topics, feature flags, thresholds)
+│   │   │   │   ├── api.yaml                          # API-specific settings (CORS, rate limits, feature toggles)
+│   │   │   │   └── ml.yaml                           # ML configs (ASR models, MLflow, Prefect, DVC settings)
+│   │   │   │
+│   │   │   ├── secrets/                              # Sensitive configuration management
+│   │   │   │   ├── secret-template.yaml              # Template with placeholder values (for documentation/reference)
+│   │   │   │   └── external-secrets.yaml             # ExternalSecret CRs (pull secrets from AWS SSM / Secrets Manager)
+│   │   │   │
+│   │   │   ├── statefulsets/                         # Stateful infrastructure services (require persistent storage)
+│   │   │   │   ├── postgres/                         # PostgreSQL / TimescaleDB database
+│   │   │   │   │   ├── infrastructure.yaml           # Database StatefulSet (persistent identity + storage)
+│   │   │   │   │   ├── service.yaml                  # Internal service for database access
+│   │   │   │   │   └── kustomization.yaml            # Kustomize config for PostgreSQL resources
+│   │   │   │   ├── redis/                            # Redis (cache + queue backend)
+│   │   │   │   ├── kafka/                            # Kafka (event streaming platform)
+│   │   │   │   └── weaviate/                         # Vector database for embeddings / semantic search
+│   │   │   │
+│   │   │   ├── deployments/                          # Stateless application and worker services
+│   │   │   │   ├── api/                              # Main backend API (NestJS)
+│   │   │   │   │   ├── apps.yaml                     # API deployment (pods, containers, env config)
+│   │   │   │   │   ├── service.yaml                  # ClusterIP service exposing API internally
+│   │   │   │   │   ├── hpa.yaml                      # Horizontal Pod Autoscaler (CPU/memory-based scaling)
+│   │   │   │   │   └── pdb.yaml                      # PodDisruptionBudget (ensures minimum availability during updates)
+│   │   │   │   │
+│   │   │   │   ├── asr-worker/                       # Speech-to-text worker (GPU-enabled if needed)
+│   │   │   │   │   ├── deployment.yaml               # Worker deployment (batch/queue processing)
+│   │   │   │   │   └── keda.yaml                     # KEDA autoscaling based on Kafka lag or queue size
+│   │   │   │   │
+│   │   │   │   ├── web-contributor/                  # Contributor-facing web app (Next.js)
+│   │   │   │   ├── web-b2b/                          # Enterprise dashboard (Next.js)
+│   │   │   │   ├── quality-engine/                   # Data validation and scoring service
+│   │   │   │   ├── data-pipeline/                    # ETL and dataset processing service
+│   │   │   │   ├── financial-service/                # Payments, wallet, and fraud detection
+│   │   │   │   └── analytics-service/                # Metrics, user activity, and data insights
+│   │   │   │
+│   │   │   ├── ingress/                              # External access configuration
+│   │   │   │   └── ingress.yaml                      # NGINX ingress with TLS (cert-manager / Let's Encrypt)
+│   │   │   │
+│   │   │   └── kustomization.yaml                    # Base-level aggregator for all resources in this directory
+│   │   │
+│   │   ├── overlays/                                 # Environment-specific overrides and customizations
+│   │   │   ├── dev/                                  # Development environment (local / testing)
+│   │   │   │   ├── kustomization.yaml                # Extends base + applies dev-specific patches
+│   │   │   │   ├── patch-resources.yaml              # Lower CPU/memory limits for dev
+│   │   │   │   ├── patch-image.yaml                  # Use dev/latest image tags
+│   │   │   │   └── keda/                             # Optional autoscaling config for development
+│   │   │   │   
+│   │   │   ├── staging/                              # Pre-production environment
+│   │   │   │   ├── kustomization.yaml                # Extends base with staging configs
+│   │   │   │   └── patch-replicas.yaml               # Adjust replica counts for staging validation
+│   │   │   │ 
+│   │   │   └── prod/                                 # Production environment
+│   │   │       ├── kustomization.yaml                # Extends base with production-ready configs
+│   │   │       ├── patch-resources.yaml              # Higher resource limits and stricter constraints
+│   │   │       ├── patch-hpa.yaml                    # Production autoscaling rules
+│   │   │       └── network-policies/                 # Enhanced security rules (restricted traffic)
+│   │   │     
+│   │   └── components/                               # Reusable Kustomize components (advanced DRY configuration)
+│   │       └── common-limits.yaml                    # Shared resource limits/requests applied across services
+│   │
+│   ├── docker/                                       # Local development environment
+│   │   ├── docker-compose.yml                        # Main local stack (Postgres, Redis, MinIO, Kafka, MailHog, etc.)
+│   │   ├── .env                                      # Local environment variables
+│   │   ├── .env.example                              # Template for all environment variables
+│   │   │
+│   │   ├── init-scripts/                             # Scripts executed on container startup
+│   │   │   ├── postgres/
+│   │   │   │   └── 01_extensions.sql                 # Enables pg_trgm, uuid-ossp, pgcrypto, TimescaleDB, etc.
+│   │   │   │
+│   │   │   └── pgadmin/
+│   │   │       └── servers.json                      # Pre-configures pgAdmin to connect to local DB
+│   │   │
+│   │   ├── minio/
+│   │   │   └── buckets.json                          # Auto-creates buckets on startup (tkllm-audio, tkllm-datasets, etc.)
+│   │   │
+│   │   └── nginx/                                    # Optional local reverse proxy / traefik config (if needed)
+│   │
+│   ├── monitoring/                                   # Observability stack configuration
+│   │   ├── prometheus/
+│   │   │   └── prometheus.yml                        # Scraping configuration for all services
+│   │   │
+│   │   └── grafana/
+│   │       └── provisioning/
+│   │           ├── datasources/
+│   │           │   └── prometheus.yml                # Auto-connects Grafana to Prometheus
+│   │           │
+│   │           └── dashboards/
+│   │               └── default.yml                   # Preloaded dashboards for API, ASR, quality, etc.
+│   │
+│   ├── messaging/                                    # Async communication & event-driven setup
+│   │   ├── kafka/
+│   │   │   ├── topics.yml                            # Definition of all Kafka topics
+│   │   │   └── consumer-groups.yml                   # Consumer group configurations
+│   │   │
+│   │   └── queues/
+│   │       └── schemas/                              # Job schemas and BullMQ/Redis queue definitions
+│   │
+│   └── scripts/                                      # Infrastructure-related helper scripts
+│        └── setup-local.sh                           # One-command setup for local environment 
 │
-├── docs/                              # Architecture decisions, API docs, guides
-├── scripts/                           # Dev utilities & automation
+├── docs/                                             # Architecture decisions, API docs, guides
+├── scripts/                                          # Dev utilities & automation
 ├── .github/
-│   └── workflows/                     # CI/CD pipelines
+│   └── workflows/                                    # CI/CD pipelines
 ├── README.md
 ├── .gitignore
 ├──.env.example
 ├──.env
 ├── CONTRIBUTING.md
-├── turbo.json                         # Turborepo monorepo config
+├── turbo.json                                      # Turborepo monorepo config
 └── LICENSE
 ```
 
