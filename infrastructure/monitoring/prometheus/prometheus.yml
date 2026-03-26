@@ -1,0 +1,56 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+  external_labels:
+    project: tkllm-darija
+    env: development
+
+rule_files:
+  - "rules/*.yml"
+
+scrape_configs:
+  - job_name: prometheus
+    static_configs:
+      - targets: ["localhost:9090"]
+
+  - job_name: tkllm-api
+    static_configs:
+      - targets: ["api:3000"]
+    metrics_path: /metrics
+
+  - job_name: tkllm-asr-worker
+    static_configs:
+      - targets: ["asr-worker:9091"]
+    metrics_path: /metrics
+
+  - job_name: tkllm-quality-engine
+    static_configs:
+      - targets: ["quality-engine:9091"]
+    metrics_path: /metrics
+
+  - job_name: tkllm-analytics
+    static_configs:
+      - targets: ["analytics-service:9091"]
+    metrics_path: /metrics
+
+  - job_name: tkllm-financial
+    static_configs:
+      - targets: ["financial-service:9091"]
+    metrics_path: /metrics
+
+  - job_name: postgres
+    static_configs:
+      - targets: ["postgres:5432"]
+
+  - job_name: redis
+    static_configs:
+      - targets: ["redis:6379"]
+
+  - job_name: kafka
+    static_configs:
+      - targets: ["kafka:9092"]
+
+  - job_name: minio
+    static_configs:
+      - targets: ["minio:9000"]
+    metrics_path: /minio/v2/metrics/cluster

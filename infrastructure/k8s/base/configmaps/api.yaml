@@ -1,0 +1,45 @@
+# =============================================================================
+# ConfigMap — api
+# NestJS API-specific non-secret configuration.
+# =============================================================================
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: api-config
+  namespace: tkllm-darija
+  labels:
+    app.kubernetes.io/part-of: tkllm-darija
+    app.kubernetes.io/component: api
+data:
+  API_PORT: "3000"
+  API_HOST: "0.0.0.0"
+  API_PREFIX: "api/v1"
+  PUBLIC_API_URL: "https://api.tkllm-darija.ma"
+
+  # GraphQL — disable playground & introspection in prod
+  GRAPHQL_PLAYGROUND: "false"
+  GRAPHQL_INTROSPECTION: "false"
+  GRAPHQL_DEBUG: "false"
+
+  # JWT
+  JWT_ACCESS_TOKEN_EXPIRES_IN: "15m"
+  JWT_REFRESH_TOKEN_EXPIRES_IN: "7d"
+
+  # Keycloak (B2B SSO)
+  KEYCLOAK_REALM: "tkllm-darija"
+  KEYCLOAK_CLIENT_ID: "tkllm-api"
+
+  # Rate limiting
+  THROTTLE_TTL: "60"
+  THROTTLE_LIMIT: "120"
+  CORS_ORIGINS: "https://app.tkllm-darija.ma,https://b2b.tkllm-darija.ma"
+
+  # Mail
+  MAIL_PROVIDER: "sendgrid"
+  MAIL_FROM: "no-reply@tkllm-darija.ma"
+  MAIL_FROM_NAME: "Tkllm-darija"
+  SMTP_SECURE: "true"
+
+  # Sentry
+  SENTRY_ENVIRONMENT: "production"
+  SENTRY_TRACES_SAMPLE_RATE: "0.2"

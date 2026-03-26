@@ -1,0 +1,87 @@
+# =============================================================================
+# Kustomization — root
+# infrastructure/k8s/kustomization.yaml
+#
+# Usage:
+#   kubectl apply -k infrastructure/k8s/           # apply everything
+#   kubectl apply -k infrastructure/k8s/overlays/staging
+#   kubectl apply -k infrastructure/k8s/overlays/production
+#
+# Dry-run:
+#   kubectl apply -k infrastructure/k8s/ --dry-run=client
+#
+# Diff against live cluster:
+#   kubectl diff -k infrastructure/k8s/
+# =============================================================================
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: tkllm-darija
+
+# ---------------------------------------------------------------------------
+# Resources — order matters: namespace first, then CRDs, then everything else
+# ---------------------------------------------------------------------------
+resources:
+  # Foundation
+  - namespace.yaml
+  - rbac.yaml
+  - network-policies.yaml
+
+  # Config & Secrets
+  - configmaps/common.yaml
+  - configmaps/api.yaml
+  - configmaps/ml.yaml
+  - secrets/external-secret.yaml       # ESO-managed; swap for secret-template.yaml in dev
+
+  # Storage
+  - storage/pvcs.yaml
+
+  # Infrastructure StatefulSets
+  - statefulsets/infrastructure.yaml
+
+  # Application Deployments
+  - deployments/apps.yaml
+
+  # Services
+  - services/services.yaml
+
+  # Ingress + TLS
+  - ingress/ingress.yaml
+
+  # Autoscaling
+  - hpa/hpa.yaml
+
+# ---------------------------------------------------------------------------
+# Common labels applied to every resource
+# ---------------------------------------------------------------------------
+commonLabels:
+  app.kubernetes.io/managed-by: kustomize
+  project: tkllm-darija
+
+# ---------------------------------------------------------------------------
+# Common annotations
+# ---------------------------------------------------------------------------
+commonAnnotations:
+  tkllm-darija/maintainer: "aitoufkirbrahimab@gmail.com"
+  tkllm-darija/repo: "https://github.com/biko2020/Tkllm-darija"
+
+# ---------------------------------------------------------------------------
+# Image overrides — update tags here for each release
+# ---------------------------------------------------------------------------
+images:
+  - name: ghcr.io/biko2020/tkllm-darija/api
+    newTag: latest
+  - name: ghcr.io/biko2020/tkllm-darija/web-contributor
+    newTag: latest
+  - name: ghcr.io/biko2020/tkllm-darija/web-b2b
+    newTag: latest
+  - name: ghcr.io/biko2020/tkllm-darija/asr-worker
+    newTag: latest
+  - name: ghcr.io/biko2020/tkllm-darija/quality-engine
+    newTag: latest
+  - name: ghcr.io/biko2020/tkllm-darija/analytics-service
+    newTag: latest
+  - name: ghcr.io/biko2020/tkllm-darija/financial-service
+    newTag: latest
+  - name: ghcr.io/biko2020/tkllm-darija/data-pipeline
+    newTag: latest

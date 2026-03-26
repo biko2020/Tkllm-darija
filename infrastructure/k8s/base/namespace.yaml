@@ -1,0 +1,12 @@
+# =============================================================================
+# Namespace — tkllm-darija
+# All platform resources live in this namespace.
+# =============================================================================
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: tkllm-darija
+  labels:
+    app.kubernetes.io/name: tkllm-darija
+    app.kubernetes.io/managed-by: kustomize
+    environment: production

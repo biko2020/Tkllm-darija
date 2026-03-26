@@ -1,0 +1,223 @@
+# =============================================================================
+# Services — Infrastructure
+# =============================================================================
+
+# PostgreSQL — ClusterIP (internal only)
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgres
+  namespace: tkllm-darija
+  labels:
+    app.kubernetes.io/name: postgres
+    app.kubernetes.io/part-of: tkllm-darija
+    app.kubernetes.io/component: database
+spec:
+  type: ClusterIP
+  selector:
+    app: postgres
+  ports:
+    - name: postgres
+      port: 5432
+      targetPort: 5432
+      protocol: TCP
+
+---
+# Redis — ClusterIP
+apiVersion: v1
+kind: Service
+metadata:
+  name: redis
+  namespace: tkllm-darija
+  labels:
+    app.kubernetes.io/name: redis
+    app.kubernetes.io/part-of: tkllm-darija
+    app.kubernetes.io/component: cache
+spec:
+  type: ClusterIP
+  selector:
+    app: redis
+  ports:
+    - name: redis
+      port: 6379
+      targetPort: 6379
+      protocol: TCP
+
+---
+# Zookeeper — ClusterIP
+apiVersion: v1
+kind: Service
+metadata:
+  name: zookeeper
+  namespace: tkllm-darija
+  labels:
+    app.kubernetes.io/name: zookeeper
+    app.kubernetes.io/part-of: tkllm-darija
+    app.kubernetes.io/component: messaging
+spec:
+  type: ClusterIP
+  selector:
+    app: zookeeper
+  ports:
+    - name: client
+      port: 2181
+      targetPort: 2181
+    - name: follower
+      port: 2888
+      targetPort: 2888
+    - name: election
+      port: 3888
+      targetPort: 3888
+
+---
+# Kafka — ClusterIP (internal only — never expose externally)
+apiVersion: v1
+kind: Service
+metadata:
+  name: kafka
+  namespace: tkllm-darija
+  labels:
+    app.kubernetes.io/name: kafka
+    app.kubernetes.io/part-of: tkllm-darija
+    app.kubernetes.io/component: messaging
+spec:
+  type: ClusterIP
+  selector:
+    app: kafka
+  ports:
+    - name: internal
+      port: 9092
+      targetPort: 9092
+    - name: external
+      port: 29092
+      targetPort: 29092
+
+---
+# Weaviate — ClusterIP
+apiVersion: v1
+kind: Service
+metadata:
+  name: weaviate
+  namespace: tkllm-darija
+  labels:
+    app.kubernetes.io/name: weaviate
+    app.kubernetes.io/part-of: tkllm-darija
+    app.kubernetes.io/component: vector-store
+spec:
+  type: ClusterIP
+  selector:
+    app: weaviate
+  ports:
+    - name: http
+      port: 8080
+      targetPort: 8080
+    - name: grpc
+      port: 50051
+      targetPort: 50051
+
+---
+# =============================================================================
+# Services — Application Layer
+# =============================================================================
+
+# NestJS API
+apiVersion: v1
+kind: Service
+metadata:
+  name: api
+  namespace: tkllm-darija
+  labels:
+    app.kubernetes.io/name: api
+    app.kubernetes.io/part-of: tkllm-darija
+    app.kubernetes.io/component: api
+spec:
+  type: ClusterIP
+  selector:
+    app: api
+  ports:
+    - name: http
+      port: 80
+      targetPort: 3000
+      protocol: TCP
+
+---
+# Next.js Contributor Web App
+apiVersion: v1
+kind: Service
+metadata:
+  name: web-contributor
+  namespace: tkllm-darija
+  labels:
+    app.kubernetes.io/name: web-contributor
+    app.kubernetes.io/part-of: tkllm-darija
+    app.kubernetes.io/component: frontend
+spec:
+  type: ClusterIP
+  selector:
+    app: web-contributor
+  ports:
+    - name: http
+      port: 80
+      targetPort: 3000
+      protocol: TCP
+
+---
+# Next.js B2B Enterprise Portal
+apiVersion: v1
+kind: Service
+metadata:
+  name: web-b2b
+  namespace: tkllm-darija
+  labels:
+    app.kubernetes.io/name: web-b2b
+    app.kubernetes.io/part-of: tkllm-darija
+    app.kubernetes.io/component: frontend
+spec:
+  type: ClusterIP
+  selector:
+    app: web-b2b
+  ports:
+    - name: http
+      port: 80
+      targetPort: 3000
+      protocol: TCP
+
+---
+# MLflow
+apiVersion: v1
+kind: Service
+metadata:
+  name: mlflow
+  namespace: tkllm-darija
+  labels:
+    app.kubernetes.io/name: mlflow
+    app.kubernetes.io/part-of: tkllm-darija
+    app.kubernetes.io/component: ml-platform
+spec:
+  type: ClusterIP
+  selector:
+    app: mlflow
+  ports:
+    - name: http
+      port: 5000
+      targetPort: 5000
+
+---
+# Prefect
+apiVersion: v1
+kind: Service
+metadata:
+  name: prefect
+  namespace: tkllm-darija
+  labels:
+    app.kubernetes.io/name: prefect
+    app.kubernetes.io/part-of: tkllm-darija
+    app.kubernetes.io/component: ml-platform
+spec:
+  type: ClusterIP
+  selector:
+    app: prefect
+  ports:
+    - name: http
+      port: 4200
+      targetPort: 4200

@@ -1,0 +1,81 @@
+# =============================================================================
+# RBAC — Service accounts and role bindings
+# =============================================================================
+
+# ---------------------------------------------------------------------------
+# ServiceAccount — API
+# Allows the API pod to interact with K8s API if needed (e.g. health checks,
+# pod info injection). Least-privilege — no cluster-level permissions.
+# ---------------------------------------------------------------------------
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: tkllm-api
+  namespace: tkllm-darija
+  labels:
+    app.kubernetes.io/part-of: tkllm-darija
+    app.kubernetes.io/component: api
+  annotations:
+    # For AWS EKS IRSA — bind to IAM role for S3/SSM access
+    eks.amazonaws.com/role-arn: arn:aws:iam::ACCOUNT_ID:role/tkllm-darija-api-role
+
+---
+# ServiceAccount — ASR Worker
+# Needs S3 access (read audio, write transcripts) via IRSA.
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: tkllm-asr-worker
+  namespace: tkllm-darija
+  labels:
+    app.kubernetes.io/part-of: tkllm-darija
+    app.kubernetes.io/component: ml-worker
+  annotations:
+    eks.amazonaws.com/role-arn: arn:aws:iam::ACCOUNT_ID:role/tkllm-darija-asr-role
+
+---
+# ServiceAccount — Data Pipeline
+# Needs broad S3 read/write for dataset ETL + DVC remote.
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: tkllm-data-pipeline
+  namespace: tkllm-darija
+  labels:
+    app.kubernetes.io/part-of: tkllm-darija
+    app.kubernetes.io/component: worker
+  annotations:
+    eks.amazonaws.com/role-arn: arn:aws:iam::ACCOUNT_ID:role/tkllm-darija-pipeline-role
+
+---
+# ---------------------------------------------------------------------------
+# Role — allow pods to read their own configmaps and secrets (namespace-scoped)
+# ---------------------------------------------------------------------------
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: tkllm-pod-reader
+  namespace: tkllm-darija
+rules:
+  - apiGroups: [""]
+    resources: ["configmaps", "secrets"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: [""]
+    resources: ["pods"]
+    verbs: ["get", "list"]
+
+---
+# RoleBinding — API
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: tkllm-api-rolebinding
+  namespace: tkllm-darija
+subjects:
+  - kind: ServiceAccount
+    name: tkllm-api
+    namespace: tkllm-darija
+roleRef:
+  kind: Role
+  name: tkllm-pod-reader
+  apiGroup: rbac.authorization.k8s.io

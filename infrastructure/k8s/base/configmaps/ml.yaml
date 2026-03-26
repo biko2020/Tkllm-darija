@@ -1,0 +1,40 @@
+# =============================================================================
+# ConfigMap — ml-config
+# ASR worker and ML pipeline configuration.
+# =============================================================================
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: ml-config
+  namespace: tkllm-darija
+  labels:
+    app.kubernetes.io/part-of: tkllm-darija
+    app.kubernetes.io/component: ml
+data:
+  # Whisper — production uses large-v3 on GPU nodes
+  WHISPER_MODEL: "large-v3"
+  WHISPER_DEVICE: "cuda"
+  WHISPER_COMPUTE_TYPE: "float16"
+  WHISPER_BEAM_SIZE: "5"
+  WHISPER_LANGUAGE: "ar"
+  HUGGINGFACE_CACHE_DIR: "/tmp/hf_cache"
+  ASR_WORKER_CONCURRENCY: "4"
+  ASR_BATCH_SIZE: "8"
+  ASR_MAX_AUDIO_DURATION_SECONDS: "300"
+
+  # Vector store
+  VECTOR_STORE_PROVIDER: "pinecone"
+  PINECONE_INDEX_NAME: "tkllm-darija-embeddings"
+  PINECONE_DIMENSION: "1536"
+
+  # MLflow
+  ML_EXPERIMENT_PROVIDER: "mlflow"
+  MLFLOW_TRACKING_URI: "http://mlflow:5000"
+  MLFLOW_EXPERIMENT_NAME: "tkllm-darija-asr"
+
+  # Prefect
+  PIPELINE_ORCHESTRATOR: "prefect"
+  PREFECT_API_URL: "http://prefect:4200/api"
+
+  # DVC remote
+  DVC_REMOTE_URL: "s3://tkllm-datasets/dvc"

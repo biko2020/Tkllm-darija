@@ -1,0 +1,680 @@
+# =============================================================================
+# Deployment — NestJS API  (apps/api)
+# REST :3000  |  GraphQL :3000/graphql  |  Metrics :3000/metrics
+# =============================================================================
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: api
+  namespace: tkllm-darija
+  labels:
+    app.kubernetes.io/name: api
+    app.kubernetes.io/part-of: tkllm-darija
+    app.kubernetes.io/component: api
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: api
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 0
+      maxSurge: 1
+  template:
+    metadata:
+      labels:
+        app: api
+        app.kubernetes.io/part-of: tkllm-darija
+        app.kubernetes.io/component: api
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "3000"
+        prometheus.io/path: "/metrics"
+    spec:
+      terminationGracePeriodSeconds: 30
+      serviceAccountName: tkllm-api
+      containers:
+        - name: api
+          image: ghcr.io/biko2020/tkllm-darija/api:latest
+          imagePullPolicy: Always
+          ports:
+            - name: http
+              containerPort: 3000
+          envFrom:
+            - configMapRef:
+                name: common-config
+            - configMapRef:
+                name: api-config
+            - secretRef:
+                name: tkllm-secrets
+          resources:
+            requests:
+              cpu: "250m"
+              memory: "512Mi"
+            limits:
+              cpu: "1000m"
+              memory: "1Gi"
+          livenessProbe:
+            httpGet:
+              path: /api/v1/health
+              port: 3000
+            initialDelaySeconds: 20
+            periodSeconds: 15
+            timeoutSeconds: 5
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /api/v1/health
+              port: 3000
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            timeoutSeconds: 3
+            failureThreshold: 3
+          startupProbe:
+            httpGet:
+              path: /api/v1/health
+              port: 3000
+            failureThreshold: 30
+            periodSeconds: 5
+      topologySpreadConstraints:
+        - maxSkew: 1
+          topologyKey: kubernetes.io/hostname
+          whenUnsatisfiable: DoNotSchedule
+          labelSelector:
+            matchLabels:
+              app: api
+
+---
+# =============================================================================
+# Deployment — Next.js Contributor Web App  (apps/web-contributor)
+# =============================================================================
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: web-contributor
+  namespace: tkllm-darija
+  labels:
+    app.kubernetes.io/name: web-contributor
+    app.kubernetes.io/part-of: tkllm-darija
+    app.kubernetes.io/component: frontend
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: web-contributor
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 0
+      maxSurge: 1
+  template:
+    metadata:
+      labels:
+        app: web-contributor
+        app.kubernetes.io/part-of: tkllm-darija
+        app.kubernetes.io/component: frontend
+    spec:
+      terminationGracePeriodSeconds: 30
+      containers:
+        - name: web-contributor
+          image: ghcr.io/biko2020/tkllm-darija/web-contributor:latest
+          imagePullPolicy: Always
+          ports:
+            - name: http
+              containerPort: 3000
+          env:
+            - name: NEXT_PUBLIC_API_URL
+              value: "https://api.tkllm-darija.ma/api/v1"
+            - name: NEXT_PUBLIC_APP_NAME
+              value: "Tkllm-darija"
+            - name: NEXT_PUBLIC_APP_ENV
+              value: "production"
+            - name: NEXT_PUBLIC_SUPABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: tkllm-secrets
+                  key: SUPABASE_URL
+            - name: NEXT_PUBLIC_SUPABASE_ANON_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: tkllm-secrets
+                  key: SUPABASE_ANON_KEY
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "256Mi"
+            limits:
+              cpu: "500m"
+              memory: "512Mi"
+          livenessProbe:
+            httpGet:
+              path: /api/healthz
+              port: 3000
+            initialDelaySeconds: 20
+            periodSeconds: 15
+          readinessProbe:
+            httpGet:
+              path: /api/healthz
+              port: 3000
+            initialDelaySeconds: 10
+            periodSeconds: 10
+
+---
+# =============================================================================
+# Deployment — Next.js B2B Enterprise Portal  (apps/web-b2b)
+# =============================================================================
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: web-b2b
+  namespace: tkllm-darija
+  labels:
+    app.kubernetes.io/name: web-b2b
+    app.kubernetes.io/part-of: tkllm-darija
+    app.kubernetes.io/component: frontend
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: web-b2b
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 0
+      maxSurge: 1
+  template:
+    metadata:
+      labels:
+        app: web-b2b
+        app.kubernetes.io/part-of: tkllm-darija
+        app.kubernetes.io/component: frontend
+    spec:
+      terminationGracePeriodSeconds: 30
+      containers:
+        - name: web-b2b
+          image: ghcr.io/biko2020/tkllm-darija/web-b2b:latest
+          imagePullPolicy: Always
+          ports:
+            - name: http
+              containerPort: 3000
+          env:
+            - name: NEXT_PUBLIC_API_URL
+              value: "https://api.tkllm-darija.ma/api/v1"
+            - name: NEXT_PUBLIC_APP_NAME
+              value: "Tkllm-darija B2B"
+            - name: NEXT_PUBLIC_APP_ENV
+              value: "production"
+            - name: NEXT_PUBLIC_SUPABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: tkllm-secrets
+                  key: SUPABASE_URL
+            - name: NEXT_PUBLIC_SUPABASE_ANON_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: tkllm-secrets
+                  key: SUPABASE_ANON_KEY
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "256Mi"
+            limits:
+              cpu: "500m"
+              memory: "512Mi"
+          livenessProbe:
+            httpGet:
+              path: /api/healthz
+              port: 3000
+            initialDelaySeconds: 20
+            periodSeconds: 15
+          readinessProbe:
+            httpGet:
+              path: /api/healthz
+              port: 3000
+            initialDelaySeconds: 10
+            periodSeconds: 10
+
+---
+# =============================================================================
+# Deployment — ASR Worker  (services/asr-worker)
+# GPU node selector: nvidia.com/gpu — uses node taint toleration
+# =============================================================================
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: asr-worker
+  namespace: tkllm-darija
+  labels:
+    app.kubernetes.io/name: asr-worker
+    app.kubernetes.io/part-of: tkllm-darija
+    app.kubernetes.io/component: ml-worker
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: asr-worker
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 1
+      maxSurge: 0
+  template:
+    metadata:
+      labels:
+        app: asr-worker
+        app.kubernetes.io/part-of: tkllm-darija
+        app.kubernetes.io/component: ml-worker
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "9091"
+        prometheus.io/path: "/metrics"
+    spec:
+      terminationGracePeriodSeconds: 120     # allow in-flight transcription to finish
+      tolerations:
+        - key: "nvidia.com/gpu"
+          operator: "Exists"
+          effect: "NoSchedule"
+      nodeSelector:
+        node-role: gpu
+      containers:
+        - name: asr-worker
+          image: ghcr.io/biko2020/tkllm-darija/asr-worker:latest
+          imagePullPolicy: Always
+          envFrom:
+            - configMapRef:
+                name: common-config
+            - configMapRef:
+                name: ml-config
+            - secretRef:
+                name: tkllm-secrets
+          volumeMounts:
+            - name: hf-cache
+              mountPath: /tmp/hf_cache
+          resources:
+            requests:
+              cpu: "2000m"
+              memory: "8Gi"
+              nvidia.com/gpu: "1"
+            limits:
+              cpu: "4000m"
+              memory: "16Gi"
+              nvidia.com/gpu: "1"
+          livenessProbe:
+            exec:
+              command: ["python", "-c", "import sys; sys.exit(0)"]
+            initialDelaySeconds: 60
+            periodSeconds: 30
+      volumes:
+        - name: hf-cache
+          persistentVolumeClaim:
+            claimName: hf-cache-pvc
+
+---
+# =============================================================================
+# Deployment — Quality Engine  (services/quality-engine)
+# =============================================================================
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: quality-engine
+  namespace: tkllm-darija
+  labels:
+    app.kubernetes.io/name: quality-engine
+    app.kubernetes.io/part-of: tkllm-darija
+    app.kubernetes.io/component: worker
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: quality-engine
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 1
+      maxSurge: 1
+  template:
+    metadata:
+      labels:
+        app: quality-engine
+        app.kubernetes.io/part-of: tkllm-darija
+        app.kubernetes.io/component: worker
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "9091"
+        prometheus.io/path: "/metrics"
+    spec:
+      terminationGracePeriodSeconds: 60
+      containers:
+        - name: quality-engine
+          image: ghcr.io/biko2020/tkllm-darija/quality-engine:latest
+          imagePullPolicy: Always
+          envFrom:
+            - configMapRef:
+                name: common-config
+            - secretRef:
+                name: tkllm-secrets
+          resources:
+            requests:
+              cpu: "250m"
+              memory: "512Mi"
+            limits:
+              cpu: "1000m"
+              memory: "2Gi"
+
+---
+# =============================================================================
+# Deployment — Analytics Service  (services/analytics-service)
+# =============================================================================
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: analytics-service
+  namespace: tkllm-darija
+  labels:
+    app.kubernetes.io/name: analytics-service
+    app.kubernetes.io/part-of: tkllm-darija
+    app.kubernetes.io/component: worker
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: analytics-service
+  template:
+    metadata:
+      labels:
+        app: analytics-service
+        app.kubernetes.io/part-of: tkllm-darija
+        app.kubernetes.io/component: worker
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "9091"
+        prometheus.io/path: "/metrics"
+    spec:
+      terminationGracePeriodSeconds: 30
+      containers:
+        - name: analytics-service
+          image: ghcr.io/biko2020/tkllm-darija/analytics-service:latest
+          imagePullPolicy: Always
+          envFrom:
+            - configMapRef:
+                name: common-config
+            - secretRef:
+                name: tkllm-secrets
+          resources:
+            requests:
+              cpu: "250m"
+              memory: "512Mi"
+            limits:
+              cpu: "1000m"
+              memory: "2Gi"
+
+---
+# =============================================================================
+# Deployment — Financial Service  (services/financial-service)
+# =============================================================================
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: financial-service
+  namespace: tkllm-darija
+  labels:
+    app.kubernetes.io/name: financial-service
+    app.kubernetes.io/part-of: tkllm-darija
+    app.kubernetes.io/component: worker
+spec:
+  replicas: 2                              # HA — payments must not drop
+  selector:
+    matchLabels:
+      app: financial-service
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 0
+      maxSurge: 1
+  template:
+    metadata:
+      labels:
+        app: financial-service
+        app.kubernetes.io/part-of: tkllm-darija
+        app.kubernetes.io/component: worker
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "9091"
+        prometheus.io/path: "/metrics"
+    spec:
+      terminationGracePeriodSeconds: 60
+      containers:
+        - name: financial-service
+          image: ghcr.io/biko2020/tkllm-darija/financial-service:latest
+          imagePullPolicy: Always
+          envFrom:
+            - configMapRef:
+                name: common-config
+            - secretRef:
+                name: tkllm-secrets
+          resources:
+            requests:
+              cpu: "250m"
+              memory: "512Mi"
+            limits:
+              cpu: "500m"
+              memory: "1Gi"
+
+---
+# =============================================================================
+# Deployment — Data Pipeline  (services/data-pipeline)
+# =============================================================================
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: data-pipeline
+  namespace: tkllm-darija
+  labels:
+    app.kubernetes.io/name: data-pipeline
+    app.kubernetes.io/part-of: tkllm-darija
+    app.kubernetes.io/component: worker
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: data-pipeline
+  template:
+    metadata:
+      labels:
+        app: data-pipeline
+        app.kubernetes.io/part-of: tkllm-darija
+        app.kubernetes.io/component: worker
+    spec:
+      terminationGracePeriodSeconds: 120
+      containers:
+        - name: data-pipeline
+          image: ghcr.io/biko2020/tkllm-darija/data-pipeline:latest
+          imagePullPolicy: Always
+          envFrom:
+            - configMapRef:
+                name: common-config
+            - configMapRef:
+                name: ml-config
+            - secretRef:
+                name: tkllm-secrets
+          resources:
+            requests:
+              cpu: "500m"
+              memory: "1Gi"
+            limits:
+              cpu: "2000m"
+              memory: "4Gi"
+
+---
+# =============================================================================
+# Deployment — MLflow  (experiment tracking + model registry)
+# UI → https://mlflow.tkllm-darija.ma
+# =============================================================================
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mlflow
+  namespace: tkllm-darija
+  labels:
+    app.kubernetes.io/name: mlflow
+    app.kubernetes.io/part-of: tkllm-darija
+    app.kubernetes.io/component: ml-platform
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mlflow
+  template:
+    metadata:
+      labels:
+        app: mlflow
+        app.kubernetes.io/part-of: tkllm-darija
+        app.kubernetes.io/component: ml-platform
+    spec:
+      terminationGracePeriodSeconds: 30
+      containers:
+        - name: mlflow
+          image: ghcr.io/mlflow/mlflow:v2.13.0
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 5000
+          command:
+            - mlflow
+            - server
+            - "--backend-store-uri"
+            - "$(DATABASE_URL)"
+            - "--default-artifact-root"
+            - "s3://$(S3_BUCKET_MODELS)/mlflow"
+            - "--host"
+            - "0.0.0.0"
+            - "--port"
+            - "5000"
+            - "--serve-artifacts"
+          envFrom:
+            - secretRef:
+                name: tkllm-secrets
+          env:
+            - name: MLFLOW_S3_ENDPOINT_URL
+              valueFrom:
+                secretKeyRef:
+                  name: tkllm-secrets
+                  key: S3_ENDPOINT
+            - name: AWS_ACCESS_KEY_ID
+              valueFrom:
+                secretKeyRef:
+                  name: tkllm-secrets
+                  key: S3_ACCESS_KEY
+            - name: AWS_SECRET_ACCESS_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: tkllm-secrets
+                  key: S3_SECRET_KEY
+            - name: S3_BUCKET_MODELS
+              valueFrom:
+                configMapKeyRef:
+                  name: common-config
+                  key: S3_BUCKET_MODELS
+          volumeMounts:
+            - name: mlflow-data
+              mountPath: /mlflow
+          resources:
+            requests:
+              cpu: "250m"
+              memory: "512Mi"
+            limits:
+              cpu: "1000m"
+              memory: "2Gi"
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 5000
+            initialDelaySeconds: 20
+            periodSeconds: 15
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 5000
+            initialDelaySeconds: 10
+            periodSeconds: 10
+      volumes:
+        - name: mlflow-data
+          persistentVolumeClaim:
+            claimName: mlflow-pvc
+
+---
+# =============================================================================
+# Deployment — Prefect  (pipeline orchestration)
+# UI → https://prefect.tkllm-darija.ma
+# =============================================================================
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: prefect
+  namespace: tkllm-darija
+  labels:
+    app.kubernetes.io/name: prefect
+    app.kubernetes.io/part-of: tkllm-darija
+    app.kubernetes.io/component: ml-platform
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: prefect
+  template:
+    metadata:
+      labels:
+        app: prefect
+        app.kubernetes.io/part-of: tkllm-darija
+        app.kubernetes.io/component: ml-platform
+    spec:
+      terminationGracePeriodSeconds: 30
+      containers:
+        - name: prefect
+          image: prefecthq/prefect:3-latest
+          imagePullPolicy: Always
+          ports:
+            - name: http
+              containerPort: 4200
+          command: ["prefect", "server", "start"]
+          env:
+            - name: PREFECT_SERVER_API_HOST
+              value: "0.0.0.0"
+            - name: PREFECT_SERVER_API_PORT
+              value: "4200"
+            - name: PREFECT_API_DATABASE_CONNECTION_URL
+              value: "postgresql+asyncpg://$(DATABASE_USER):$(DATABASE_PASSWORD)@postgres:5432/tkllm_darija"
+            - name: PREFECT_SERVER_ANALYTICS_ENABLED
+              value: "false"
+            - name: PREFECT_LOGGING_LEVEL
+              value: "INFO"
+            - name: DATABASE_USER
+              valueFrom:
+                secretKeyRef:
+                  name: tkllm-secrets
+                  key: DATABASE_USER
+            - name: DATABASE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: tkllm-secrets
+                  key: DATABASE_PASSWORD
+          resources:
+            requests:
+              cpu: "250m"
+              memory: "512Mi"
+            limits:
+              cpu: "1000m"
+              memory: "2Gi"
+          livenessProbe:
+            httpGet:
+              path: /api/health
+              port: 4200
+            initialDelaySeconds: 30
+            periodSeconds: 15
+          readinessProbe:
+            httpGet:
+              path: /api/health
+              port: 4200
+            initialDelaySeconds: 15
+            periodSeconds: 10

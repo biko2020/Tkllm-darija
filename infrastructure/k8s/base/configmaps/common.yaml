@@ -1,0 +1,90 @@
+# =============================================================================
+# ConfigMap — common
+# Non-secret environment variables shared across all services.
+# =============================================================================
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: common-config
+  namespace: tkllm-darija
+  labels:
+    app.kubernetes.io/part-of: tkllm-darija
+data:
+  NODE_ENV: "production"
+  APP_NAME: "tkllm-darija"
+  LOG_LEVEL: "info"
+  TZ: "Africa/Casablanca"
+
+  # Database
+  DATABASE_HOST: "postgres"
+  DATABASE_PORT: "5432"
+  DATABASE_NAME: "tkllm_darija"
+  DATABASE_SSL: "true"
+  DATABASE_POOL_MIN: "5"
+  DATABASE_POOL_MAX: "20"
+
+  # Redis
+  REDIS_HOST: "redis"
+  REDIS_PORT: "6379"
+  REDIS_DB: "0"
+  REDIS_QUEUE_DB: "1"
+  REDIS_SESSION_DB: "2"
+  REDIS_CACHE_DB: "3"
+  REDIS_TTL_DEFAULT: "3600"
+
+  # Kafka — internal cluster address
+  KAFKA_BROKER: "kafka:9092"
+  KAFKA_CLIENT_ID: "tkllm-api"
+  KAFKA_GROUP_ID: "tkllm-consumer-group"
+  KAFKA_SSL: "false"
+
+  # Kafka topics
+  KAFKA_TOPIC_AUDIO_UPLOADED: "audio.uploaded"
+  KAFKA_TOPIC_TRANSCRIPTION_REQUESTED: "transcription.requested"
+  KAFKA_TOPIC_TRANSCRIPTION_COMPLETED: "transcription.completed"
+  KAFKA_TOPIC_ANNOTATION_TASK_CREATED: "annotation.task.created"
+  KAFKA_TOPIC_QUALITY_REVIEW_REQUESTED: "quality.review.requested"
+  KAFKA_TOPIC_QUALITY_REVIEW_COMPLETED: "quality.review.completed"
+  KAFKA_TOPIC_REWARD_ISSUED: "reward.issued"
+  KAFKA_TOPIC_PAYMENT_PROCESSED: "payment.processed"
+  KAFKA_TOPIC_EXPORT_REQUESTED: "export.requested"
+
+  # S3 / Object storage (Cloudflare R2 in prod)
+  S3_REGION: "auto"
+  S3_BUCKET_AUDIO: "tkllm-audio"
+  S3_BUCKET_DATASETS: "tkllm-datasets"
+  S3_BUCKET_EXPORTS: "tkllm-exports"
+  S3_BUCKET_MODELS: "tkllm-models"
+
+  # Feature flags
+  FEATURE_GAMIFICATION: "true"
+  FEATURE_AI_TUTOR: "true"
+  FEATURE_B2B_API_ACCESS: "true"
+  FEATURE_REALTIME_FEED: "false"
+  FEATURE_BENCHMARK_SUITE: "false"
+
+  # Quality engine thresholds
+  QUALITY_MIN_SCORE_THRESHOLD: "0.75"
+  QUALITY_HUMAN_REVIEW_THRESHOLD: "0.60"
+  QUALITY_AUTO_APPROVE_THRESHOLD: "0.90"
+  QUALITY_REVIEWERS_PER_TASK: "3"
+  QUALITY_INTER_ANNOTATOR_AGREEMENT: "0.70"
+
+  # Analytics
+  ANALYTICS_RETENTION_DAYS: "365"
+  ANALYTICS_AGGREGATION_INTERVAL: "1h"
+
+  # Wallet limits
+  WALLET_MIN_PAYOUT_MAD: "50"
+  WALLET_MAX_PAYOUT_MAD: "5000"
+  WALLET_REWARD_PER_AUDIO_SECOND_MAD: "0.10"
+  FRAUD_MAX_SUBMISSIONS_PER_DAY: "200"
+  FRAUD_MAX_IDENTICAL_AUDIO_RATIO: "0.05"
+
+  # Weaviate
+  WEAVIATE_URL: "http://weaviate:8080"
+  WEAVIATE_CLASS_NAME: "DarijaEmbedding"
+
+  # Prometheus metrics
+  PROMETHEUS_ENABLED: "true"
+  METRICS_PATH: "/metrics"

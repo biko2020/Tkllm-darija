@@ -1,0 +1,809 @@
+# =============================================================================
+# TKLLM-DARIJA — Local Development Stack
+# =============================================================================
+# Usage:
+#   docker compose up -d                        # infrastructure only (default)
+#   docker compose --profile apps up -d         # infra + all app services
+#   docker compose --profile ml up -d           # infra + ML/ASR workers
+#   docker compose --profile monitoring up -d   # infra + Prometheus / Grafana
+#   docker compose --profile tools up -d        # infra + Kafka UI / pgAdmin / MailHog
+#   docker compose --profile full up -d         # everything
+#
+# Prerequisites: .env file at repo root (copy from .env.example)
+# Port map: see bottom of this file.
+# =============================================================================
+
+name: tkllm-darija
+
+# ---------------------------------------------------------------------------
+# Shared extension fields (YAML anchors)
+# ---------------------------------------------------------------------------
+x-restart: &restart
+  restart: unless-stopped
+
+x-logging: &logging
+  logging:
+    driver: json-file
+    options:
+      max-size: "20m"
+      max-file: "5"
+
+x-healthcheck-defaults: &hc-defaults
+  interval: 15s
+  timeout: 5s
+  retries: 5
+  start_period: 30s
+
+# ---------------------------------------------------------------------------
+# Top-level networks
+# ---------------------------------------------------------------------------
+networks:
+  tkllm-backend:
+    name: tkllm-backend
+    driver: bridge
+  tkllm-ml:
+    name: tkllm-ml
+    driver: bridge
+  tkllm-monitoring:
+    name: tkllm-monitoring
+    driver: bridge
+
+# ---------------------------------------------------------------------------
+# Named volumes
+# ---------------------------------------------------------------------------
+volumes:
+  postgres-data:
+    name: tkllm-postgres-data
+  redis-data:
+    name: tkllm-redis-data
+  minio-data:
+    name: tkllm-minio-data
+  kafka-data:
+    name: tkllm-kafka-data
+  zookeeper-data:
+    name: tkllm-zookeeper-data
+  zookeeper-logs:
+    name: tkllm-zookeeper-logs
+  mlflow-data:
+    name: tkllm-mlflow-data
+  prefect-data:
+    name: tkllm-prefect-data
+  weaviate-data:
+    name: tkllm-weaviate-data
+  prometheus-data:
+    name: tkllm-prometheus-data
+  grafana-data:
+    name: tkllm-grafana-data
+  pgadmin-data:
+    name: tkllm-pgadmin-data
+
+# ===========================================================================
+# S E R V I C E S
+# ===========================================================================
+services:
+
+  # =========================================================================
+  # ██████╗  █████╗ ████████╗ █████╗ ██████╗  █████╗ ███████╗███████╗
+  # ██╔══██╗██╔══██╗╚══██╔══╝██╔══██╗██╔══██╗██╔══██╗██╔════╝██╔════╝
+  # ██║  ██║███████║   ██║   ███████║██████╔╝███████║███████╗█████╗
+  # ██║  ██║██╔══██║   ██║   ██╔══██║██╔══██╗██╔══██║╚════██║██╔══╝
+  # ██████╔╝██║  ██║   ██║   ██║  ██║██████╔╝██║  ██║███████║███████╗
+  # ╚═════╝ ╚═╝  ╚═╝   ╚═╝   ╚═╝  ╚═╝╚═════╝ ╚═╝  ╚═╝╚══════╝╚══════╝
+  # =========================================================================
+
+  # ---------------------------------------------------------------------------
+  # PostgreSQL 16 + TimescaleDB 2.x
+  # ---------------------------------------------------------------------------
+  postgres:
+    image: timescale/timescaledb-ha:pg16
+    container_name: tkllm-postgres
+    <<: [*restart, *logging]
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-tkllm_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-tkllm_password}
+      POSTGRES_DB: ${POSTGRES_DB:-tkllm_darija}
+      POSTGRES_INITDB_ARGS: "--encoding=UTF8 --locale=en_US.UTF-8"
+      # TimescaleDB tuning
+      TIMESCALEDB_TELEMETRY: "off"
+    volumes:
+      - postgres-data:/home/postgres/pgdata/data
+      - ./init-scripts/postgres:/docker-entrypoint-initdb.d:ro
+    ports:
+      - "${DATABASE_PORT:-5432}:5432"
+    networks:
+      - tkllm-backend
+    healthcheck:
+      <<: *hc-defaults
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-tkllm_user} -d ${POSTGRES_DB:-tkllm_darija}"]
+    command: >
+      postgres
+        -c shared_preload_libraries=timescaledb
+        -c max_connections=200
+        -c shared_buffers=256MB
+        -c effective_cache_size=768MB
+        -c work_mem=16MB
+        -c maintenance_work_mem=128MB
+        -c wal_level=logical
+        -c max_wal_senders=5
+
+  # ---------------------------------------------------------------------------
+  # Redis 7 — cache + BullMQ queues + session store
+  # ---------------------------------------------------------------------------
+  redis:
+    image: redis:7-alpine
+    container_name: tkllm-redis
+    <<: [*restart, *logging]
+    command: >
+      redis-server
+        --requirepass "${REDIS_PASSWORD:-}"
+        --maxmemory 512mb
+        --maxmemory-policy allkeys-lru
+        --save 60 1000
+        --appendonly yes
+        --appendfsync everysec
+        --loglevel notice
+    volumes:
+      - redis-data:/data
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    networks:
+      - tkllm-backend
+    healthcheck:
+      <<: *hc-defaults
+      test: >
+        sh -c 'if [ -z "${REDIS_PASSWORD:-}" ]; then redis-cli ping; else redis-cli -a "${REDIS_PASSWORD}" ping; fi'
+
+  # ---------------------------------------------------------------------------
+  # MinIO — S3-compatible object storage (audio files, datasets, model artefacts)
+  # API  → localhost:9000
+  # Console → localhost:9001
+  # ---------------------------------------------------------------------------
+  minio:
+    image: minio/minio:latest
+    container_name: tkllm-minio
+    <<: [*restart, *logging]
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-minioadmin}
+      MINIO_VOLUMES: /data
+      MINIO_SITE_NAME: tkllm-darija-local
+    command: server /data --console-address ":9001"
+    volumes:
+      - minio-data:/data
+    ports:
+      - "9000:9000"
+      - "${MINIO_CONSOLE_PORT:-9001}:9001"
+    networks:
+      - tkllm-backend
+    healthcheck:
+      <<: *hc-defaults
+      test: ["CMD", "mc", "ready", "local"]
+
+  # MinIO bucket initialisation (runs once then exits)
+  minio-init:
+    image: minio/mc:latest
+    container_name: tkllm-minio-init
+    depends_on:
+      minio:
+        condition: service_healthy
+    networks:
+      - tkllm-backend
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-minioadmin}
+    entrypoint: >
+      sh -c "
+        mc alias set local http://minio:9000 $${MINIO_ROOT_USER} $${MINIO_ROOT_PASSWORD} &&
+        mc mb --ignore-existing local/tkllm-audio &&
+        mc mb --ignore-existing local/tkllm-datasets &&
+        mc mb --ignore-existing local/tkllm-exports &&
+        mc mb --ignore-existing local/tkllm-models &&
+        mc anonymous set download local/tkllm-audio &&
+        echo '✅ MinIO buckets ready'
+      "
+    restart: on-failure
+
+  # =========================================================================
+  # M E S S A G I N G   —   Kafka + Zookeeper
+  # =========================================================================
+
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.6.1
+    container_name: tkllm-zookeeper
+    <<: [*restart, *logging]
+    environment:
+      ZOOKEEPER_CLIENT_PORT: ${ZOOKEEPER_CLIENT_PORT:-2181}
+      ZOOKEEPER_TICK_TIME: 2000
+      ZOOKEEPER_SYNC_LIMIT: 2
+    volumes:
+      - zookeeper-data:/var/lib/zookeeper/data
+      - zookeeper-logs:/var/lib/zookeeper/log
+    ports:
+      - "2181:2181"
+    networks:
+      - tkllm-backend
+    healthcheck:
+      <<: *hc-defaults
+      test: ["CMD-SHELL", "echo ruok | nc localhost 2181 | grep imok"]
+
+  kafka:
+    image: confluentinc/cp-kafka:7.6.1
+    container_name: tkllm-kafka
+    <<: [*restart, *logging]
+    depends_on:
+      zookeeper:
+        condition: service_healthy
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:29092,PLAINTEXT_HOST://localhost:9092
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+      KAFKA_NUM_PARTITIONS: 3
+      KAFKA_DEFAULT_REPLICATION_FACTOR: 1
+      KAFKA_LOG_RETENTION_HOURS: 168
+      KAFKA_LOG4J_LOGGERS: "kafka.controller=INFO,kafka.producer.async.DefaultEventHandler=INFO,state.change.logger=INFO"
+    volumes:
+      - kafka-data:/var/lib/kafka/data
+    ports:
+      - "9092:9092"
+    networks:
+      - tkllm-backend
+    healthcheck:
+      <<: *hc-defaults
+      test: ["CMD-SHELL", "kafka-broker-api-versions --bootstrap-server localhost:9092"]
+
+  # Kafka topic provisioner — creates all platform topics then exits
+  kafka-init:
+    image: confluentinc/cp-kafka:7.6.1
+    container_name: tkllm-kafka-init
+    depends_on:
+      kafka:
+        condition: service_healthy
+    networks:
+      - tkllm-backend
+    entrypoint: >
+      bash -c "
+        echo 'Waiting for Kafka...' &&
+        cub kafka-ready -b kafka:29092 1 30 &&
+        kafka-topics --bootstrap-server kafka:29092 --create --if-not-exists --topic audio.uploaded             --partitions 3 --replication-factor 1 &&
+        kafka-topics --bootstrap-server kafka:29092 --create --if-not-exists --topic transcription.requested   --partitions 3 --replication-factor 1 &&
+        kafka-topics --bootstrap-server kafka:29092 --create --if-not-exists --topic transcription.completed   --partitions 3 --replication-factor 1 &&
+        kafka-topics --bootstrap-server kafka:29092 --create --if-not-exists --topic annotation.task.created   --partitions 3 --replication-factor 1 &&
+        kafka-topics --bootstrap-server kafka:29092 --create --if-not-exists --topic quality.review.requested  --partitions 3 --replication-factor 1 &&
+        kafka-topics --bootstrap-server kafka:29092 --create --if-not-exists --topic quality.review.completed  --partitions 3 --replication-factor 1 &&
+        kafka-topics --bootstrap-server kafka:29092 --create --if-not-exists --topic reward.issued             --partitions 1 --replication-factor 1 &&
+        kafka-topics --bootstrap-server kafka:29092 --create --if-not-exists --topic payment.processed         --partitions 1 --replication-factor 1 &&
+        kafka-topics --bootstrap-server kafka:29092 --create --if-not-exists --topic export.requested          --partitions 2 --replication-factor 1 &&
+        echo '✅ Kafka topics ready'
+      "
+    restart: on-failure
+
+  # =========================================================================
+  # V E C T O R   S T O R E   —   Weaviate
+  # =========================================================================
+
+  weaviate:
+    image: semitechnologies/weaviate:1.25.4
+    container_name: tkllm-weaviate
+    <<: [*restart, *logging]
+    environment:
+      QUERY_DEFAULTS_LIMIT: 25
+      AUTHENTICATION_ANONYMOUS_ACCESS_ENABLED: "true"
+      PERSISTENCE_DATA_PATH: /var/lib/weaviate
+      DEFAULT_VECTORIZER_MODULE: none
+      ENABLE_MODULES: ""
+      CLUSTER_HOSTNAME: tkllm-weaviate
+    volumes:
+      - weaviate-data:/var/lib/weaviate
+    ports:
+      - "8085:8080"
+    networks:
+      - tkllm-backend
+      - tkllm-ml
+    healthcheck:
+      <<: *hc-defaults
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:8080/v1/.well-known/ready"]
+
+  # =========================================================================
+  # M L   S T A C K
+  # =========================================================================
+
+  # ---------------------------------------------------------------------------
+  # MLflow — experiment tracking + model registry
+  # UI → localhost:5000
+  # Artifacts stored in MinIO (s3://tkllm-models/mlflow)
+  # ---------------------------------------------------------------------------
+  mlflow:
+    image: ghcr.io/mlflow/mlflow:v2.13.0
+    container_name: tkllm-mlflow
+    <<: [*restart, *logging]
+    profiles: [ml, full]
+    depends_on:
+      postgres:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+    environment:
+      MLFLOW_BACKEND_STORE_URI: postgresql://${POSTGRES_USER:-tkllm_user}:${POSTGRES_PASSWORD:-tkllm_password}@postgres:5432/${POSTGRES_DB:-tkllm_darija}
+      MLFLOW_DEFAULT_ARTIFACT_ROOT: s3://tkllm-models/mlflow
+      MLFLOW_S3_ENDPOINT_URL: http://minio:9000
+      AWS_ACCESS_KEY_ID: ${MINIO_ROOT_USER:-minioadmin}
+      AWS_SECRET_ACCESS_KEY: ${MINIO_ROOT_PASSWORD:-minioadmin}
+    command: >
+      mlflow server
+        --backend-store-uri postgresql://${POSTGRES_USER:-tkllm_user}:${POSTGRES_PASSWORD:-tkllm_password}@postgres:5432/${POSTGRES_DB:-tkllm_darija}
+        --default-artifact-root s3://tkllm-models/mlflow
+        --host 0.0.0.0
+        --port 5000
+        --serve-artifacts
+    volumes:
+      - mlflow-data:/mlflow
+    ports:
+      - "${MLFLOW_PORT:-5000}:5000"
+    networks:
+      - tkllm-ml
+      - tkllm-backend
+    healthcheck:
+      <<: *hc-defaults
+      test: ["CMD", "curl", "-f", "http://localhost:5000/health"]
+
+  # ---------------------------------------------------------------------------
+  # Prefect 3 — data pipeline orchestration
+  # UI → localhost:4200
+  # ---------------------------------------------------------------------------
+  prefect:
+    image: prefecthq/prefect:3-latest
+    container_name: tkllm-prefect
+    <<: [*restart, *logging]
+    profiles: [ml, full]
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      PREFECT_SERVER_API_HOST: 0.0.0.0
+      PREFECT_SERVER_API_PORT: 4200
+      PREFECT_API_DATABASE_CONNECTION_URL: postgresql+asyncpg://${POSTGRES_USER:-tkllm_user}:${POSTGRES_PASSWORD:-tkllm_password}@postgres:5432/${POSTGRES_DB:-tkllm_darija}
+      PREFECT_SERVER_ANALYTICS_ENABLED: "false"
+      PREFECT_LOGGING_LEVEL: INFO
+    command: prefect server start
+    volumes:
+      - prefect-data:/root/.prefect
+    ports:
+      - "${PREFECT_PORT:-4200}:4200"
+    networks:
+      - tkllm-ml
+      - tkllm-backend
+    healthcheck:
+      <<: *hc-defaults
+      test: ["CMD", "curl", "-f", "http://localhost:4200/api/health"]
+
+  # =========================================================================
+  # M O N I T O R I N G   S T A C K
+  # =========================================================================
+
+  # ---------------------------------------------------------------------------
+  # Prometheus — metrics scraping
+  # UI → localhost:9090
+  # ---------------------------------------------------------------------------
+  prometheus:
+    image: prom/prometheus:v2.51.2
+    container_name: tkllm-prometheus
+    <<: [*restart, *logging]
+    profiles: [monitoring, full]
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--storage.tsdb.path=/prometheus"
+      - "--storage.tsdb.retention.time=15d"
+      - "--web.enable-lifecycle"
+      - "--web.enable-admin-api"
+    volumes:
+      - prometheus-data:/prometheus
+      - ./monitoring/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./monitoring/prometheus/rules:/etc/prometheus/rules:ro
+    ports:
+      - "9090:9090"
+    networks:
+      - tkllm-monitoring
+      - tkllm-backend
+    healthcheck:
+      <<: *hc-defaults
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:9090/-/healthy"]
+
+  # ---------------------------------------------------------------------------
+  # Grafana — dashboards
+  # UI → localhost:3001  (admin / admin)
+  # ---------------------------------------------------------------------------
+  grafana:
+    image: grafana/grafana-oss:10.4.2
+    container_name: tkllm-grafana
+    <<: [*restart, *logging]
+    profiles: [monitoring, full]
+    depends_on:
+      - prometheus
+    environment:
+      GF_SECURITY_ADMIN_USER: ${GRAFANA_USER:-admin}
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_PASSWORD:-admin}
+      GF_SERVER_HTTP_PORT: 3001
+      GF_USERS_ALLOW_SIGN_UP: "false"
+      GF_ANALYTICS_REPORTING_ENABLED: "false"
+      GF_INSTALL_PLUGINS: grafana-clock-panel,grafana-simple-json-datasource
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./monitoring/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./monitoring/grafana/dashboards:/var/lib/grafana/dashboards:ro
+    ports:
+      - "3001:3001"
+    networks:
+      - tkllm-monitoring
+    healthcheck:
+      <<: *hc-defaults
+      test: ["CMD-SHELL", "wget --spider -q http://localhost:3001/api/health"]
+
+  # =========================================================================
+  # D E V   T O O L S   (profile: tools)
+  # =========================================================================
+
+  # ---------------------------------------------------------------------------
+  # Kafka UI — browse topics, messages, consumer groups
+  # UI → localhost:8090
+  # ---------------------------------------------------------------------------
+  kafka-ui:
+    image: provectuslabs/kafka-ui:latest
+    container_name: tkllm-kafka-ui
+    <<: [*restart, *logging]
+    profiles: [tools, full]
+    depends_on:
+      kafka:
+        condition: service_healthy
+    environment:
+      KAFKA_CLUSTERS_0_NAME: local
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:29092
+      KAFKA_CLUSTERS_0_ZOOKEEPER: zookeeper:2181
+      SERVER_PORT: 8090
+    ports:
+      - "8090:8090"
+    networks:
+      - tkllm-backend
+    healthcheck:
+      <<: *hc-defaults
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:8090/actuator/health"]
+
+  # ---------------------------------------------------------------------------
+  # pgAdmin 4 — PostgreSQL GUI
+  # UI → localhost:5050  (admin@tkllm.ma / admin)
+  # ---------------------------------------------------------------------------
+  pgadmin:
+    image: dpage/pgadmin4:8.6
+    container_name: tkllm-pgadmin
+    <<: [*restart, *logging]
+    profiles: [tools, full]
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@tkllm.ma
+      PGADMIN_DEFAULT_PASSWORD: admin
+      PGADMIN_CONFIG_SERVER_MODE: "False"
+      PGADMIN_CONFIG_MASTER_PASSWORD_REQUIRED: "False"
+    volumes:
+      - pgadmin-data:/var/lib/pgadmin
+      - ./init-scripts/pgadmin/servers.json:/pgadmin4/servers.json:ro
+    ports:
+      - "5050:80"
+    networks:
+      - tkllm-backend
+
+  # ---------------------------------------------------------------------------
+  # MailHog — local SMTP server + email inbox UI
+  # SMTP → localhost:1025
+  # UI   → localhost:8025
+  # ---------------------------------------------------------------------------
+  mailhog:
+    image: mailhog/mailhog:v1.0.1
+    container_name: tkllm-mailhog
+    <<: [*restart, *logging]
+    profiles: [tools, full]
+    ports:
+      - "1025:1025"   # SMTP
+      - "8025:8025"   # Web UI
+    networks:
+      - tkllm-backend
+    healthcheck:
+      <<: *hc-defaults
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:8025"]
+
+  # ---------------------------------------------------------------------------
+  # Redis Commander — Redis GUI
+  # UI → localhost:8081
+  # ---------------------------------------------------------------------------
+  redis-commander:
+    image: rediscommander/redis-commander:latest
+    container_name: tkllm-redis-commander
+    <<: [*restart, *logging]
+    profiles: [tools, full]
+    depends_on:
+      redis:
+        condition: service_healthy
+    environment:
+      REDIS_HOSTS: local:redis:6379:0${REDIS_PASSWORD:+:${REDIS_PASSWORD}}
+      HTTP_USER: admin
+      HTTP_PASSWORD: admin
+    ports:
+      - "8081:8081"
+    networks:
+      - tkllm-backend
+
+  # =========================================================================
+  # A P P   S E R V I C E S   (profile: apps)
+  # Built from local source — requires `turbo run build` first.
+  # =========================================================================
+
+  # ---------------------------------------------------------------------------
+  # NestJS API — apps/api
+  # REST → localhost:3000
+  # GraphQL → localhost:3000/graphql
+  # ---------------------------------------------------------------------------
+  api:
+    build:
+      context: ../../apps/api
+      dockerfile: Dockerfile
+      target: development
+    container_name: tkllm-api
+    <<: [*restart, *logging]
+    profiles: [apps, full]
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+    env_file:
+      - ../../.env
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-tkllm_user}:${POSTGRES_PASSWORD:-tkllm_password}@postgres:5432/${POSTGRES_DB:-tkllm_darija}
+      REDIS_URL: redis://redis:6379
+      KAFKA_BROKER: kafka:29092
+      S3_ENDPOINT: http://minio:9000
+      NODE_ENV: development
+    volumes:
+      - ../../apps/api/src:/app/src:ro        # hot-reload source
+      - ../../apps/api/prisma:/app/prisma:ro
+    ports:
+      - "${API_PORT:-3000}:3000"
+    networks:
+      - tkllm-backend
+    healthcheck:
+      <<: *hc-defaults
+      test: ["CMD", "curl", "-f", "http://localhost:3000/api/v1/health"]
+
+  # ---------------------------------------------------------------------------
+  # Next.js — Contributor Web App — apps/web-contributor
+  # UI → localhost:3002
+  # ---------------------------------------------------------------------------
+  web-contributor:
+    build:
+      context: ../../apps/web-contributor
+      dockerfile: Dockerfile
+      target: development
+    container_name: tkllm-web-contributor
+    <<: [*restart, *logging]
+    profiles: [apps, full]
+    depends_on:
+      - api
+    env_file:
+      - ../../apps/web-contributor/.env
+    environment:
+      NEXT_PUBLIC_API_URL: http://api:3000/api/v1
+    volumes:
+      - ../../apps/web-contributor/src:/app/src:ro
+    ports:
+      - "3002:3000"
+    networks:
+      - tkllm-backend
+
+  # ---------------------------------------------------------------------------
+  # Next.js — B2B Enterprise Portal — apps/web-b2b
+  # UI → localhost:3003
+  # ---------------------------------------------------------------------------
+  web-b2b:
+    build:
+      context: ../../apps/web-b2b
+      dockerfile: Dockerfile
+      target: development
+    container_name: tkllm-web-b2b
+    <<: [*restart, *logging]
+    profiles: [apps, full]
+    depends_on:
+      - api
+    env_file:
+      - ../../apps/web-b2b/.env
+    environment:
+      NEXT_PUBLIC_API_URL: http://api:3000/api/v1
+    volumes:
+      - ../../apps/web-b2b/src:/app/src:ro
+    ports:
+      - "3003:3000"
+    networks:
+      - tkllm-backend
+
+  # ---------------------------------------------------------------------------
+  # ASR Worker — services/asr-worker
+  # GPU-optional: add `deploy.resources.reservations.devices` below for CUDA
+  # ---------------------------------------------------------------------------
+  asr-worker:
+    build:
+      context: ../../services/asr-worker
+      dockerfile: Dockerfile
+    container_name: tkllm-asr-worker
+    <<: [*restart, *logging]
+    profiles: [apps, ml, full]
+    depends_on:
+      kafka:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    env_file:
+      - ../../.env
+    environment:
+      KAFKA_BROKER: kafka:29092
+      REDIS_URL: redis://redis:6379
+      S3_ENDPOINT: http://minio:9000
+      WHISPER_DEVICE: ${WHISPER_DEVICE:-cpu}
+      WHISPER_MODEL: ${WHISPER_MODEL:-small}
+    volumes:
+      - /tmp/hf_cache:/tmp/hf_cache   # share model cache across rebuilds
+    networks:
+      - tkllm-backend
+      - tkllm-ml
+    # Uncomment to enable GPU passthrough (requires nvidia-container-toolkit):
+    # deploy:
+    #   resources:
+    #     reservations:
+    #       devices:
+    #         - driver: nvidia
+    #           count: 1
+    #           capabilities: [gpu]
+
+  # ---------------------------------------------------------------------------
+  # Quality Engine — services/quality-engine
+  # ---------------------------------------------------------------------------
+  quality-engine:
+    build:
+      context: ../../services/quality-engine
+      dockerfile: Dockerfile
+    container_name: tkllm-quality-engine
+    <<: [*restart, *logging]
+    profiles: [apps, full]
+    depends_on:
+      postgres:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    env_file:
+      - ../../.env
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-tkllm_user}:${POSTGRES_PASSWORD:-tkllm_password}@postgres:5432/${POSTGRES_DB:-tkllm_darija}
+      KAFKA_BROKER: kafka:29092
+      REDIS_URL: redis://redis:6379
+    networks:
+      - tkllm-backend
+
+  # ---------------------------------------------------------------------------
+  # Data Pipeline — services/data-pipeline
+  # ---------------------------------------------------------------------------
+  data-pipeline:
+    build:
+      context: ../../services/data-pipeline
+      dockerfile: Dockerfile
+    container_name: tkllm-data-pipeline
+    <<: [*restart, *logging]
+    profiles: [ml, full]
+    depends_on:
+      postgres:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+    env_file:
+      - ../../.env
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-tkllm_user}:${POSTGRES_PASSWORD:-tkllm_password}@postgres:5432/${POSTGRES_DB:-tkllm_darija}
+      KAFKA_BROKER: kafka:29092
+      S3_ENDPOINT: http://minio:9000
+      PREFECT_API_URL: http://prefect:4200/api
+      MLFLOW_TRACKING_URI: http://mlflow:5000
+      MLFLOW_S3_ENDPOINT_URL: http://minio:9000
+    networks:
+      - tkllm-backend
+      - tkllm-ml
+
+  # ---------------------------------------------------------------------------
+  # Analytics Service — services/analytics-service
+  # ---------------------------------------------------------------------------
+  analytics-service:
+    build:
+      context: ../../services/analytics-service
+      dockerfile: Dockerfile
+    container_name: tkllm-analytics
+    <<: [*restart, *logging]
+    profiles: [apps, full]
+    depends_on:
+      postgres:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    env_file:
+      - ../../.env
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-tkllm_user}:${POSTGRES_PASSWORD:-tkllm_password}@postgres:5432/${POSTGRES_DB:-tkllm_darija}
+      KAFKA_BROKER: kafka:29092
+      REDIS_URL: redis://redis:6379
+    networks:
+      - tkllm-backend
+
+  # ---------------------------------------------------------------------------
+  # Financial Service — services/financial-service
+  # ---------------------------------------------------------------------------
+  financial-service:
+    build:
+      context: ../../services/financial-service
+      dockerfile: Dockerfile
+    container_name: tkllm-financial
+    <<: [*restart, *logging]
+    profiles: [apps, full]
+    depends_on:
+      postgres:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    env_file:
+      - ../../.env
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-tkllm_user}:${POSTGRES_PASSWORD:-tkllm_password}@postgres:5432/${POSTGRES_DB:-tkllm_darija}
+      KAFKA_BROKER: kafka:29092
+      REDIS_URL: redis://redis:6379
+    networks:
+      - tkllm-backend
+
+# =============================================================================
+# PORT MAP (localhost)
+# =============================================================================
+# Service                 Port(s)       Profile
+# ─────────────────────── ──────────── ──────────────────
+# NestJS API              3000         apps / full
+# Next.js Contributor     3002         apps / full
+# Next.js B2B             3003         apps / full
+# PostgreSQL              5432         default
+# Redis                   6379         default
+# MinIO API               9000         default
+# MinIO Console           9001         default
+# Kafka                   9092         default
+# Zookeeper               2181         default
+# Weaviate                8085         default
+# MLflow                  5000         ml / full
+# Prefect                 4200         ml / full
+# Prometheus              9090         monitoring / full
+# Grafana                 3001         monitoring / full
+# Kafka UI                8090         tools / full
+# pgAdmin                 5050         tools / full
+# MailHog SMTP            1025         tools / full
+# MailHog UI              8025         tools / full
+# Redis Commander         8081         tools / full
+# =============================================================================

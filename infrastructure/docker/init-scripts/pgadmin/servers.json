@@ -1,0 +1,14 @@
+{
+  "Servers": {
+    "1": {
+      "Name": "tkllm-darija (local)",
+      "Group": "Local Dev",
+      "Host": "postgres",
+      "Port": 5432,
+      "MaintenanceDB": "tkllm_darija",
+      "Username": "tkllm_user",
+      "SSLMode": "prefer",
+      "PassFile": "/pgpass"
+    }
+  }
+}
