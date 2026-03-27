@@ -1,0 +1,47 @@
+{
+  "name": "@tkllm/web-b2b",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Next.js 15 — B2B enterprise portal & admin dashboard",
+  "scripts": {
+    "build":        "next build",
+    "dev":          "next dev -p 3003",
+    "start":        "next start -p 3003",
+    "test":         "jest",
+    "lint":         "next lint",
+    "lint:fix":     "next lint --fix",
+    "format":       "prettier --write \"./**/*.{ts,tsx,css}\"",
+    "format:check": "prettier --check \"./**/*.{ts,tsx,css}\"",
+    "typecheck":    "tsc --noEmit",
+    "clean":        "rimraf .next out"
+  },
+  "dependencies": {
+    "next":                   "^15.1.4",
+    "react":                  "^19.0.0",
+    "react-dom":              "^19.0.0",
+    "@supabase/supabase-js":  "^2.47.10",
+    "@supabase/auth-helpers-nextjs": "^0.10.0",
+    "swr":                    "^2.3.0",
+    "zustand":                "^5.0.3",
+    "react-hook-form":        "^7.54.2",
+    "zod":                    "^3.24.1",
+    "@hookform/resolvers":    "^3.9.1",
+    "axios":                  "^1.7.9",
+    "recharts":               "^2.15.0",
+    "@tkllm/types":           "*",
+    "@tkllm/ui":              "*",
+    "@tkllm/validators":      "*"
+  },
+  "devDependencies": {
+    "@types/node":            "^22.10.7",
+    "@types/react":           "^19.0.3",
+    "@types/react-dom":       "^19.0.2",
+    "typescript":             "^5.7.3",
+    "tailwindcss":            "^3.4.17",
+    "autoprefixer":           "^10.4.20",
+    "postcss":                "^8.5.1",
+    "eslint":                 "^9.17.0",
+    "eslint-config-next":     "^15.1.4",
+    "rimraf":                 "^6.0.1"
+  }
+}

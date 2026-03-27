@@ -164,6 +164,7 @@ Tkllm-darija/
 │   └── api/                                           # NestJS — main application API (REST + GraphQL)
 │       ├── .env
 │       ├── .env.example
+│       ├── package.json
 │       ├── src/
 │       │   ├── modules/                               # user, task, data, quality, auth
 │       │   ├── common/                                # guards, interceptors, filters, pipes
@@ -176,27 +177,32 @@ Tkllm-darija/
 │   ├── asr-worker/                                    # Whisper / wav2vec transcription worker
 │   │   ├── .env
 │   │   ├── .env.example
+│   │   ├── package.json
 │   │   ├── src/
 │   │   ├── models/
 │   │   └── Dockerfile
 │   ├── data-pipeline/                                 # ETL jobs (Prefect / Dagster)
 │   │   ├── .env
 │   │   ├── .env.example
+│   │   ├── package.json
 │   │   ├── flows/
 │   │   └── Dockerfile
 │   ├── quality-engine/                                # Scoring, validation & active learning
 │   │   ├── .env
 │   │   ├── .env.example
+│   │   ├── package.json
 │   │   ├── src/
 │   │   └── Dockerfile
 │   ├── analytics-service/                            # Contributor activity, data quality & growth metrics
 │   │   ├── .env
 │   │   ├── .env.example
+│   │   ├── package.json
 │   │   ├── src/
 │   │   └── Dockerfile
 │   └── financial-service/                            # Payouts, wallet system, fraud detection
 │       ├── .env
 │       ├── .env.example
+│   │   ├── package.json
 │       ├── src/
 │       │   ├── providers/                            # CMI, Orange Money, Inwi Money adapters
 │       │   ├── wallet/                               # Contributor wallet & balance management
@@ -205,12 +211,16 @@ Tkllm-darija/
 │
 ├── packages/                                         # Shared internal libraries (monorepo)
 │   ├── types/                                        # Shared TypeScript types & interfaces
+│   │   └── package.json
 │   ├── ui/                                           # Shared design system components
+│   │   └── package.json
 │   └── validators/                                   # Shared validation schemas (Zod)
+│       └── package.json
 │
 ├── ml/                                               # ML research & model development
 │   ├── notebooks/                                    # Jupyter notebooks for exploration & analysis
 │   ├── training/                                     # Training scripts & experiment configs
+│   ├── package.json                                  # Python/Conda or Node-based ML orchestration
 │   ├── evaluation/                                   # Benchmark & evaluation scripts
 │   ├── feature-store/                                # Reusable ML features (embeddings, speaker features, normalized text)
 │   │   ├── embeddings/
@@ -359,6 +369,7 @@ Tkllm-darija/
 ├──.env.example
 ├──.env
 ├── CONTRIBUTING.md
+├── package.json                                    # Root workspace configuration
 ├── turbo.json                                      # Turborepo monorepo config
 └── LICENSE
 ```

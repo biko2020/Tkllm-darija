@@ -1,134 +1,110 @@
-#######################################
-# ROOT & GENERAL
-#######################################
-.DS_Store
-Thumbs.db
-*.log
-logs/
 
-#######################################
-# ENV FILES (CRITICAL)
-#######################################
+# =============================================================================
+# TKLLM-DARIJA — .gitignore
+# =============================================================================
+
+# ── Secrets & environment ────────────────────────────────────────────────────
 .env
-.env.*
+.env.local
+.env.*.local
 !.env.example
 
-#######################################
-# NODE / NEXT / TURBO
-#######################################
+# ── Node / npm ───────────────────────────────────────────────────────────────
 node_modules/
-.pnpm-store/
-.next/
-out/
-dist/
-build/
-coverage/
+.npm/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+package-lock.json     # generated — not committed in monorepo
+yarn.lock
 
-#######################################
-# TURBO
-#######################################
+# ── Turborepo ────────────────────────────────────────────────────────────────
 .turbo/
 
-#######################################
-# FLUTTER (mobile app)
-#######################################
-.dart_tool/
-.flutter-plugins
-.flutter-plugins-dependencies
-.packages
-.pub-cache/
+# ── TypeScript ───────────────────────────────────────────────────────────────
+*.tsbuildinfo
+dist/
 build/
-ios/Pods/
-android/.gradle/
-android/app/build/
 
-#######################################
-# PYTHON / ML
-#######################################
+# ── Next.js ──────────────────────────────────────────────────────────────────
+.next/
+out/
+
+# ── NestJS ───────────────────────────────────────────────────────────────────
+dist/
+
+# ── Prisma ───────────────────────────────────────────────────────────────────
+apps/api/node_modules/.prisma/
+
+# ── Flutter / Dart ───────────────────────────────────────────────────────────
+apps/mobile/.dart_tool/
+apps/mobile/.flutter-plugins
+apps/mobile/.flutter-plugins-dependencies
+apps/mobile/build/
+apps/mobile/.packages
+apps/mobile/pubspec.lock   # keep for reproducible builds — remove if preferred
+
+# ── Python ───────────────────────────────────────────────────────────────────
 __pycache__/
-*.pyc
+*.py[cod]
 *.pyo
 *.pyd
+.Python
+*.egg-info/
+dist/
+build/
 .venv/
 venv/
 env/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+htmlcov/
+.coverage
+coverage.xml
 
-#######################################
-# JUPYTER
-#######################################
-.ipynb_checkpoints/
+# ── Jupyter ──────────────────────────────────────────────────────────────────
+ml/notebooks/.ipynb_checkpoints/
+*.ipynb_checkpoints
 
-#######################################
-# ML MODELS (VERY IMPORTANT)
-#######################################
-*.pt
-*.pth
-*.h5
+# ── ML / Model artefacts ─────────────────────────────────────────────────────
+/tmp/hf_cache/
+models/*.bin
+models/*.pt
+models/*.safetensors
 *.ckpt
-*.onnx
+mlruns/              # local MLflow runs (use remote tracking URI)
+wandb/
 
-#######################################
-# DATA (DO NOT COMMIT RAW DATA)
-#######################################
-data/versions/*/raw/
-data/versions/*/processed/
-data/versions/*/intermediate/
-data/versions/*/audio/
+# ── DVC ──────────────────────────────────────────────────────────────────────
+/data/versions/      # versioned dataset snapshots managed by DVC
+!data/versions/.dvc/
+/data/versions/.dvc/cache/
 
-# Allow schemas + registry
-!data/schemas/
-!data/registry/
-!data/samples/
+# ── Docker ───────────────────────────────────────────────────────────────────
+infrastructure/docker/.env   # local override — root .env is the source of truth
 
-#######################################
-# AUDIO FILES
-#######################################
-*.wav
-*.mp3
-*.flac
+# ── Test & Coverage ──────────────────────────────────────────────────────────
+coverage/
+*.lcov
+test-results/
+playwright-report/
 
-#######################################
-# DOCKER
-#######################################
-docker-compose.override.yml
-*.env.docker
-
-#######################################
-# TERRAFORM
-#######################################
-.terraform/
-*.tfstate
-*.tfstate.backup
-
-#######################################
-# KUBERNETES
-#######################################
-*.secret.yaml
-
-#######################################
-# IDE
-#######################################
-.vscode/
+# ── Editor / OS ──────────────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
 .idea/
+.vscode/
+*.swp
+*.swo
+*.suo
+*.user
+*.log
 
-#######################################
-# PRISMA
-#######################################
-prisma/dev.db
-
-#######################################
-# ML EXPERIMENTS
-#######################################
-ml/experiments/tracking/*
-!ml/experiments/tracking/.gitkeep
-
-#######################################
-# FEATURE STORE CACHE
-#######################################
-ml/feature-store/**/cache/
-
-#######################################
-# TEMP FILES
-#######################################
-tmp/
-temp/
+# ── Certificates ─────────────────────────────────────────────────────────────
+*.pem
+*.key
+*.crt
+*.csr

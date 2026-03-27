@@ -1,0 +1,31 @@
+{
+  "name": "@tkllm/financial-service",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Payouts, contributor wallet & fraud detection — CMI, Orange Money, Inwi Money",
+  "scripts": {
+    "dev":   "ts-node-dev --respawn src/main.ts",
+    "start": "node dist/main.js",
+    "build": "tsc",
+    "test":  "jest",
+    "lint":  "eslint \"src/**/*.ts\"",
+    "clean": "rimraf dist"
+  },
+  "dependencies": {
+    "kafkajs":        "^2.2.4",
+    "ioredis":        "^5.4.2",
+    "@prisma/client": "^6.3.1",
+    "axios":          "^1.7.9",
+    "dotenv":         "^16.4.7",
+    "@tkllm/types":   "*",
+    "@tkllm/validators": "*"
+  },
+  "devDependencies": {
+    "@types/node":  "^22.10.7",
+    "typescript":   "^5.7.3",
+    "ts-node-dev":  "^2.0.0",
+    "prisma":       "^6.3.1",
+    "jest":         "^29.7.0",
+    "rimraf":       "^6.0.1"
+  }
+}

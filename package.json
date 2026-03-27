@@ -1,0 +1,61 @@
+{
+  "name": "tkllm-darija",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Crowdsourced Moroccan Darija Data Factory — monorepo root",
+  "author": "Brahim Ait Oufkir <aitoufkirbrahimab@gmail.com>",
+  "license": "UNLICENSED",
+  "packageManager": "npm@10.9.2",
+  "engines": {
+    "node": ">=20.0.0",
+    "npm": ">=10.0.0"
+  },
+  "workspaces": [
+    "apps/*",
+    "services/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "build":          "turbo run build",
+    "dev":            "turbo run dev",
+    "start":          "turbo run start",
+    "test":           "turbo run test",
+    "test:e2e":       "turbo run test:e2e",
+    "lint":           "turbo run lint",
+    "lint:fix":       "turbo run lint:fix",
+    "format":         "turbo run format",
+    "format:check":   "turbo run format:check",
+    "typecheck":      "turbo run typecheck",
+    "clean":          "turbo run clean && rimraf node_modules",
+    "db:generate":    "turbo run db:generate --filter=@tkllm/api",
+    "db:migrate":     "turbo run db:migrate --filter=@tkllm/api",
+    "db:push":        "turbo run db:push --filter=@tkllm/api",
+    "db:seed":        "turbo run db:seed --filter=@tkllm/api",
+    "db:studio":      "turbo run db:studio --filter=@tkllm/api",
+    "infra:up":       "docker compose -f infrastructure/docker/docker-compose.yml up -d",
+    "infra:down":     "docker compose -f infrastructure/docker/docker-compose.yml down",
+    "infra:logs":     "docker compose -f infrastructure/docker/docker-compose.yml logs -f",
+    "infra:reset":    "docker compose -f infrastructure/docker/docker-compose.yml down -v",
+    "infra:ml":       "docker compose -f infrastructure/docker/docker-compose.yml --profile ml up -d",
+    "infra:tools":    "docker compose -f infrastructure/docker/docker-compose.yml --profile tools up -d",
+    "infra:monitor":  "docker compose -f infrastructure/docker/docker-compose.yml --profile monitoring up -d",
+    "setup":          "bash infrastructure/scripts/setup-local.sh"
+  },
+  "devDependencies": {
+    "turbo":          "^2.8.20",
+    "rimraf":         "^6.0.1",
+    "prettier":       "^3.4.2",
+    "eslint":         "^9.17.0",
+    "@typescript-eslint/eslint-plugin": "^8.19.0",
+    "@typescript-eslint/parser":        "^8.19.0",
+    "typescript":     "^5.7.3"
+  },
+  "prettier": {
+    "semi":           true,
+    "singleQuote":    true,
+    "trailingComma":  "all",
+    "printWidth":     100,
+    "tabWidth":       2,
+    "endOfLine":      "lf"
+  }
+}
