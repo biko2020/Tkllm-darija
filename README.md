@@ -202,7 +202,7 @@ Tkllm-darija/
 │   └── financial-service/                            # Payouts, wallet system, fraud detection
 │       ├── .env
 │       ├── .env.example
-│   │   ├── package.json
+│       ├── package.json
 │       ├── src/
 │       │   ├── providers/                            # CMI, Orange Money, Inwi Money adapters
 │       │   ├── wallet/                               # Contributor wallet & balance management
@@ -244,7 +244,71 @@ Tkllm-darija/
 │
 ├── infrastructure/
 │   ├── terraform/                                    # Infrastructure-as-Code for cloud (AWS/GCP/DO/etc.)
-│   │   └──                                           # Terraform modules, variables, environments (prod/staging/dev)
+│   │   ├── modules/                                  # Reusable Terraform modules for infrastructure components
+│   │   │   ├── vpc/                                  # VPC, subnets, internet gateways, NAT gateways
+│   │   │   │   ├── main.tf                           # VPC module definition
+│   │   │   │   ├── variables.tf                      # Input variables for VPC configuration
+│   │   │   │   ├── outputs.tf                        # Output values from VPC module
+│   │   │   │   └── README.md                         # Documentation for VPC module
+│   │   │   ├── eks/                                  # Amazon EKS cluster and node groups
+│   │   │   │   ├── main.tf                           # EKS cluster configuration
+│   │   │   │   ├── variables.tf                      # EKS-specific variables
+│   │   │   │   ├── outputs.tf                        # EKS outputs (cluster endpoint, etc.)
+│   │   │   │   └── README.md                         # EKS module documentation
+│   │   │   ├── rds/                                  # Amazon RDS PostgreSQL instance
+│   │   │   │   ├── main.tf                           # RDS instance and parameter groups
+│   │   │   │   ├── variables.tf                      # Database configuration variables
+│   │   │   │   ├── outputs.tf                        # Database connection outputs
+│   │   │   │   └── README.md                         # RDS module docs
+│   │   │   ├── s3/                                   # S3 buckets for object storage
+│   │   │   │   ├── main.tf                           # Bucket creation and policies
+│   │   │   │   ├── variables.tf                      # Bucket configuration variables
+│   │   │   │   ├── outputs.tf                        # Bucket names and ARNs
+│   │   │   │   └── README.md                         # S3 module documentation
+│   │   │   ├── redis/                                # ElastiCache Redis cluster
+│   │   │   │   ├── main.tf                           # Redis cluster configuration
+│   │   │   │   ├── variables.tf                      # Redis settings
+│   │   │   │   ├── outputs.tf                        # Redis endpoints
+│   │   │   │   └── README.md                         # Redis module docs
+│   │   │   ├── kafka/                                # Amazon MSK Kafka cluster
+│   │   │   │   ├── main.tf                           # MSK cluster setup
+│   │   │   │   ├── variables.tf                      # Kafka configuration
+│   │   │   │   ├── outputs.tf                        # Bootstrap servers
+│   │   │   │   └── README.md                         # Kafka module documentation
+│   │   │   └── monitoring/                           # CloudWatch, Prometheus, and alerting
+│   │   │       ├── main.tf                           # Monitoring resources
+│   │   │       ├── variables.tf                      # Monitoring variables
+│   │   │       ├── outputs.tf                        # Monitoring outputs
+│   │   │       └── README.md                         # Monitoring module docs
+│   │   ├── environments/                             # Environment-specific Terraform configurations
+│   │   │   ├── dev/                                  # Development environment setup
+│   │   │   │   ├── main.tf                           # Root module for dev environment
+│   │   │   │   ├── variables.tf                      # Dev-specific variables
+│   │   │   │   ├── terraform.tfvars                  # Variable values for development
+│   │   │   │   ├── outputs.tf                        # Outputs for dev environment
+│   │   │   │   └── backend.tf                        # State backend for dev
+│   │   │   ├── staging/                              # Staging environment configuration
+│   │   │   │   ├── main.tf                           # Root module for staging
+│   │   │   │   ├── variables.tf                      # Staging variables
+│   │   │   │   ├── terraform.tfvars                  # Staging variable values
+│   │   │   │   ├── outputs.tf                        # Staging outputs
+│   │   │   │   └── backend.tf                        # Staging state backend
+│   │   │   └── prod/                                 # Production environment setup
+│   │   │       ├── main.tf                           # Root module for production
+│   │   │       ├── variables.tf                      # Production variables
+│   │   │       ├── terraform.tfvars                  # Production variable values
+│   │   │       ├── outputs.tf                        # Production outputs
+│   │   │       └── backend.tf                        # Production state backend
+│   │   ├── shared/                                   # Shared Terraform configurations
+│   │   │   ├── providers.tf                          # AWS provider and version constraints
+│   │   │   ├── backend.tf                            # Remote state backend configuration
+│   │   │   ├── data.tf                               # Data sources for existing resources
+│   │   │   └── versions.tf                           # Terraform and provider version requirements
+│   │   └── scripts/                                  # Helper scripts for Terraform operations
+│   │       ├── init.sh                               # Terraform initialization script
+│   │       ├── plan.sh                               # Script to run terraform plan
+│   │       ├── apply.sh                              # Script to run terraform apply
+│   │       └── destroy.sh                            # Script to destroy resources
 │   │
 │   ├── k8s/                                          # Kubernetes manifests (deployment, scaling, networking, security)                             
 │   │   ├── base/                                     # Environment-agnostic base resources (shared across all environments)
