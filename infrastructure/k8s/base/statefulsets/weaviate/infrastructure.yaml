@@ -1,0 +1,100 @@
+# =============================================================================
+# StatefulSet — Weaviate 1.25.4
+# Vector store for Darija embeddings and semantic data search.
+# API key auth enabled; anonymous access disabled in production.
+# =============================================================================
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: weaviate
+  namespace: tkllm-darija
+  labels:
+    app.kubernetes.io/name: weaviate
+    app.kubernetes.io/part-of: tkllm-darija
+    app.kubernetes.io/component: vector-store
+spec:
+  serviceName: weaviate
+  replicas: 1
+  selector:
+    matchLabels:
+      app: weaviate
+  template:
+    metadata:
+      labels:
+        app: weaviate
+        app.kubernetes.io/name: weaviate
+        app.kubernetes.io/part-of: tkllm-darija
+        app.kubernetes.io/component: vector-store
+    spec:
+      terminationGracePeriodSeconds: 30
+      securityContext:
+        fsGroup: 1000
+        runAsUser: 1000
+        runAsNonRoot: true
+      containers:
+        - name: weaviate
+          image: semitechnologies/weaviate:1.25.4
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 8080
+            - name: grpc
+              containerPort: 50051
+          env:
+            - name: QUERY_DEFAULTS_LIMIT
+              value: "25"
+            - name: AUTHENTICATION_ANONYMOUS_ACCESS_ENABLED
+              value: "false"
+            - name: AUTHENTICATION_APIKEY_ENABLED
+              value: "true"
+            - name: AUTHENTICATION_APIKEY_ALLOWED_KEYS
+              valueFrom:
+                secretKeyRef:
+                  name: tkllm-secrets
+                  key: WEAVIATE_API_KEY
+            - name: AUTHORIZATION_ADMINLIST_ENABLED
+              value: "true"
+            - name: AUTHORIZATION_ADMINLIST_USERS
+              value: "admin"
+            - name: PERSISTENCE_DATA_PATH
+              value: "/var/lib/weaviate"
+            - name: DEFAULT_VECTORIZER_MODULE
+              value: "none"
+            - name: ENABLE_MODULES
+              value: ""
+            - name: CLUSTER_HOSTNAME
+              value: "tkllm-weaviate"
+            - name: PROMETHEUS_MONITORING_ENABLED
+              value: "true"
+            - name: PROMETHEUS_MONITORING_PORT
+              value: "2112"
+          volumeMounts:
+            - name: weaviate-data
+              mountPath: /var/lib/weaviate
+          resources:
+            requests:
+              cpu: "500m"
+              memory: "1Gi"
+            limits:
+              cpu: "2000m"
+              memory: "4Gi"
+          livenessProbe:
+            httpGet:
+              path: /v1/.well-known/live
+              port: 8080
+            initialDelaySeconds: 30
+            periodSeconds: 15
+            timeoutSeconds: 5
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /v1/.well-known/ready
+              port: 8080
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            timeoutSeconds: 3
+            failureThreshold: 3
+      volumes:
+        - name: weaviate-data
+          persistentVolumeClaim:
+            claimName: weaviate-pvc

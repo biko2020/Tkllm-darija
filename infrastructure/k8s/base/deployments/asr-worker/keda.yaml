@@ -1,0 +1,54 @@
+# =============================================================================
+# KEDA ScaledObject — ASR Worker
+# Scales GPU pods based on Kafka consumer lag on "transcription.requested".
+# When queue is empty → 0 pods (scale to zero saves GPU cost).
+# Each pending message batch → +1 pod, up to maxReplicaCount: 5.
+#
+# Install KEDA: helm install keda kedacore/keda --namespace keda --create-namespace
+# Docs: https://keda.sh/docs/latest/scalers/apache-kafka/
+# =============================================================================
+apiVersion: keda.sh/v1alpha1
+kind: ScaledObject
+metadata:
+  name: asr-worker-scaledobject
+  namespace: tkllm-darija
+  labels:
+    app.kubernetes.io/name: asr-worker
+    app.kubernetes.io/part-of: tkllm-darija
+    app.kubernetes.io/component: ml-worker
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: asr-worker
+  pollingInterval: 15           # check Kafka lag every 15 seconds
+  cooldownPeriod: 120           # wait 2 min after last message before scaling down
+  idleReplicaCount: 0           # scale to zero when no messages pending
+  minReplicaCount: 0
+  maxReplicaCount: 5
+  fallback:
+    failureThreshold: 3
+    replicas: 1                 # keep 1 pod if KEDA metric source is unavailable
+  triggers:
+    - type: kafka
+      metadata:
+        bootstrapServers: kafka:9092
+        consumerGroup: asr-worker-group
+        topic: transcription.requested
+        lagThreshold: "5"           # scale up by 1 pod per 5 queued messages
+        offsetResetPolicy: latest
+        allowIdleConsumers: "false"
+        scaleToZeroOnInvalidOffset: "false"
+
+---
+# =============================================================================
+# TriggerAuthentication — Kafka (no SASL in cluster; placeholder for staging/prod
+# if you add SASL later)
+# =============================================================================
+apiVersion: keda.sh/v1alpha1
+kind: TriggerAuthentication
+metadata:
+  name: asr-kafka-auth
+  namespace: tkllm-darija
+spec:
+  secretTargetRef: []           # empty = no auth; add SASL entries here if needed

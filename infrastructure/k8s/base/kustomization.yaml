@@ -1,17 +1,12 @@
 # =============================================================================
-# Kustomization — root
-# infrastructure/k8s/kustomization.yaml
+# Kustomization — base
+# infrastructure/k8s/base/kustomization.yaml
 #
-# Usage:
-#   kubectl apply -k infrastructure/k8s/           # apply everything
+# Environment-agnostic resources shared across dev / staging / prod.
+# Never apply this directly — always apply via an overlay:
+#   kubectl apply -k infrastructure/k8s/overlays/dev
 #   kubectl apply -k infrastructure/k8s/overlays/staging
-#   kubectl apply -k infrastructure/k8s/overlays/production
-#
-# Dry-run:
-#   kubectl apply -k infrastructure/k8s/ --dry-run=client
-#
-# Diff against live cluster:
-#   kubectl diff -k infrastructure/k8s/
+#   kubectl apply -k infrastructure/k8s/overlays/prod
 # =============================================================================
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
@@ -19,40 +14,74 @@ kind: Kustomization
 namespace: tkllm-darija
 
 # ---------------------------------------------------------------------------
-# Resources — order matters: namespace first, then CRDs, then everything else
+# Resources — applied in order
 # ---------------------------------------------------------------------------
 resources:
   # Foundation
   - namespace.yaml
-  - rbac.yaml
-  - network-policies.yaml
+  - rbac/rbac.yaml
+  - network-policies/default-deny.yaml
 
-  # Config & Secrets
+  # Configuration
   - configmaps/common.yaml
   - configmaps/api.yaml
   - configmaps/ml.yaml
-  - secrets/external-secret.yaml       # ESO-managed; swap for secret-template.yaml in dev
+
+  # Secrets (ESO-managed in prod; swap for secret-template.yaml in dev)
+  - secrets/external-secrets.yaml
 
   # Storage
   - storage/pvcs.yaml
 
-  # Infrastructure StatefulSets
-  - statefulsets/infrastructure.yaml
+  # ── StatefulSets (each sub-folder has its own kustomization) ─────────────
+  - statefulsets/postgres
+  - statefulsets/redis
+  - statefulsets/kafka
+  - statefulsets/weaviate
 
-  # Application Deployments
-  - deployments/apps.yaml
+  # ── Deployments ───────────────────────────────────────────────────────────
+  # API
+  - deployments/api/apps.yaml
+  - deployments/api/service.yaml
+  - deployments/api/hpa.yaml
+  - deployments/api/pdb.yaml
 
-  # Services
-  - services/services.yaml
+  # ASR Worker (GPU — KEDA ScaledObject)
+  - deployments/asr-worker/deployment.yaml
+  - deployments/asr-worker/keda.yaml
+
+  # Web apps
+  - deployments/web-contributor/deployment.yaml
+  - deployments/web-contributor/service.yaml
+  - deployments/web-contributor/hpa.yaml
+  - deployments/web-contributor/pdb.yaml
+
+  - deployments/web-b2b/deployment.yaml
+  - deployments/web-b2b/service.yaml
+  - deployments/web-b2b/hpa.yaml
+  - deployments/web-b2b/pdb.yaml
+
+  # Background workers
+  - deployments/quality-engine/deployment.yaml
+  - deployments/quality-engine/service.yaml
+  - deployments/quality-engine/hpa.yaml
+
+  - deployments/data-pipeline/deployment.yaml
+  - deployments/data-pipeline/service.yaml
+
+  - deployments/financial-service/deployment.yaml
+  - deployments/financial-service/service.yaml
+  - deployments/financial-service/hpa.yaml
+  - deployments/financial-service/pdb.yaml
+
+  - deployments/analytics-service/deployment.yaml
+  - deployments/analytics-service/service.yaml
 
   # Ingress + TLS
   - ingress/ingress.yaml
 
-  # Autoscaling
-  - hpa/hpa.yaml
-
 # ---------------------------------------------------------------------------
-# Common labels applied to every resource
+# Common labels — applied to every resource
 # ---------------------------------------------------------------------------
 commonLabels:
   app.kubernetes.io/managed-by: kustomize
@@ -66,7 +95,7 @@ commonAnnotations:
   tkllm-darija/repo: "https://github.com/biko2020/Tkllm-darija"
 
 # ---------------------------------------------------------------------------
-# Image overrides — update tags here for each release
+# Image registry — centralised tag management (overlays override newTag)
 # ---------------------------------------------------------------------------
 images:
   - name: ghcr.io/biko2020/tkllm-darija/api

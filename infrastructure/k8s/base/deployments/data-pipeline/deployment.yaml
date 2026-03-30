@@ -1,0 +1,86 @@
+# =============================================================================
+# Deployment — Data Pipeline  (services/data-pipeline)
+# ETL jobs orchestrated by Prefect. Ingests DODa, DVoice, AtlasIA datasets,
+# processes audio, and exports versioned Parquet/JSONL to S3.
+# =============================================================================
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: data-pipeline
+  namespace: tkllm-darija
+  labels:
+    app.kubernetes.io/name: data-pipeline
+    app.kubernetes.io/part-of: tkllm-darija
+    app.kubernetes.io/component: worker
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: data-pipeline
+  strategy:
+    type: Recreate              # only 1 replica — avoid concurrent ETL conflicts
+  template:
+    metadata:
+      labels:
+        app: data-pipeline
+        app.kubernetes.io/name: data-pipeline
+        app.kubernetes.io/part-of: tkllm-darija
+        app.kubernetes.io/component: worker
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "9091"
+        prometheus.io/path: "/metrics"
+    spec:
+      terminationGracePeriodSeconds: 120    # allow long ETL jobs to flush
+      serviceAccountName: tkllm-data-pipeline
+      containers:
+        - name: data-pipeline
+          image: ghcr.io/biko2020/tkllm-darija/data-pipeline:latest
+          imagePullPolicy: Always
+          ports:
+            - name: metrics
+              containerPort: 9091
+          envFrom:
+            - configMapRef:
+                name: common-config
+            - configMapRef:
+                name: ml-config
+            - secretRef:
+                name: tkllm-secrets
+          env:
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: tkllm-secrets
+                  key: DATABASE_URL
+            - name: KAFKA_BROKER
+              value: "kafka:9092"
+            - name: S3_ENDPOINT
+              valueFrom:
+                secretKeyRef:
+                  name: tkllm-secrets
+                  key: S3_ENDPOINT
+            - name: PREFECT_API_URL
+              value: "http://prefect:4200/api"
+            - name: MLFLOW_TRACKING_URI
+              value: "http://mlflow:5000"
+            - name: MLFLOW_S3_ENDPOINT_URL
+              valueFrom:
+                secretKeyRef:
+                  name: tkllm-secrets
+                  key: S3_ENDPOINT
+          resources:
+            requests:
+              cpu: "500m"
+              memory: "1Gi"
+            limits:
+              cpu: "2000m"
+              memory: "4Gi"
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 9091
+            initialDelaySeconds: 30
+            periodSeconds: 20
+            timeoutSeconds: 5
+            failureThreshold: 3

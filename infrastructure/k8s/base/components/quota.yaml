@@ -1,0 +1,44 @@
+# =============================================================================
+# ResourceQuota — namespace-level hard caps.
+# Prevents a single namespace from consuming the entire cluster.
+# Prod overlay patches these to higher values; dev overlay patches lower.
+# =============================================================================
+apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: tkllm-resource-quota
+  namespace: tkllm-darija
+  labels:
+    app.kubernetes.io/part-of: tkllm-darija
+    app.kubernetes.io/managed-by: kustomize
+spec:
+  hard:
+    # Compute
+    requests.cpu:     "20"
+    requests.memory:  "40Gi"
+    limits.cpu:       "60"
+    limits.memory:    "120Gi"
+
+    # GPU (requires nvidia device plugin)
+    requests.nvidia.com/gpu: "5"
+    limits.nvidia.com/gpu:   "5"
+
+    # Workloads
+    pods:                     "60"
+    count/deployments.apps:   "20"
+    count/statefulsets.apps:  "10"
+    count/jobs.batch:         "20"
+    count/cronjobs.batch:     "10"
+
+    # Storage
+    persistentvolumeclaims:   "20"
+    requests.storage:         "1Ti"
+
+    # Services
+    services:                 "30"
+    services.loadbalancers:   "2"
+    services.nodeports:       "0"   # no NodePort allowed — use Ingress
+
+    # Config & Secrets
+    configmaps:               "30"
+    secrets:                  "30"

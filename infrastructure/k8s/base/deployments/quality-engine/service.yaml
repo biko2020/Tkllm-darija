@@ -1,0 +1,22 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: quality-engine
+  namespace: tkllm-darija
+  labels:
+    app.kubernetes.io/name: quality-engine
+    app.kubernetes.io/part-of: tkllm-darija
+    app.kubernetes.io/component: worker
+  annotations:
+    prometheus.io/scrape: "true"
+    prometheus.io/port: "9091"
+    prometheus.io/path: "/metrics"
+spec:
+  type: ClusterIP
+  selector:
+    app: quality-engine
+  ports:
+    - name: metrics
+      port: 9091
+      targetPort: 9091
+      protocol: TCP

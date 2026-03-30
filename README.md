@@ -272,10 +272,19 @@ Tkllm-darija/
 │   │   │   │   ├── postgres/                         # PostgreSQL / TimescaleDB database
 │   │   │   │   │   ├── infrastructure.yaml           # Database StatefulSet (persistent identity + storage)
 │   │   │   │   │   ├── service.yaml                  # Internal service for database access
-│   │   │   │   │   └── kustomization.yaml            # Kustomize config for PostgreSQL resources
+│   │   │   │   │   └── kustomization.yaml            # Kustomize config for PostgreSQL resources                                            
 │   │   │   │   ├── redis/                            # Redis (cache + queue backend)
+│   │   │   │   │   ├── infrastructure.yaml           # Redis StatefulSet with resource limits and persistence
+│   │   │   │   │   ├── service.yaml                  # ClusterIP Service exposing Redis on port 6379
+│   │   │   │   │   ├── kustomization.yaml            # Kustomize file to combine resources and inject secrets
 │   │   │   │   ├── kafka/                            # Kafka (event streaming platform)
+│   │   │   │   │   ├── infrastructure.yaml           # Kafka StatefulSet with broker configuration
+│   │   │   │   │   ├── service.yaml                  # Headless Service for Kafka brokers
+│   │   │   │   │   ├── kustomization.yaml            # Kustomize configuration for Kafka
 │   │   │   │   └── weaviate/                         # Vector database for embeddings / semantic search
+│   │   │   │       ├── infrastructure.yaml           # Weaviate StatefulSet with persistent storage
+│   │   │   │       ├── service.yaml                  # ClusterIP Service exposing Weaviate (HTTP + gRPC)
+│   │   │   │       └── kustomization.yaml            # Kustomize file for Weaviate resources
 │   │   │   │
 │   │   │   ├── deployments/                          # Stateless application and worker services
 │   │   │   │   ├── api/                              # Main backend API (NestJS)
@@ -289,16 +298,38 @@ Tkllm-darija/
 │   │   │   │   │   └── keda.yaml                     # KEDA autoscaling based on Kafka lag or queue size
 │   │   │   │   │
 │   │   │   │   ├── web-contributor/                  # Contributor-facing web app (Next.js)
+│   │   │   │   │   ├── deployment.yaml               # Kubernetes Deployment for the Next.js contributor web application (.. requests/limits) 
+│   │   │   │   │   ├── service.yaml                  # ClusterIP Service to expose the contributor web app internally within the cluster
+│   │   │   │   │   ├── hpa.yaml                      # Horizontal Pod Autoscaler (HPA) to automatically scale based on CPU/memory usage
+│   │   │   │   │   └── pdb.yaml                      # PodDisruptionBudget to ensure minimum availability during voluntary disruptions
+│   │   │   │   │
 │   │   │   │   ├── web-b2b/                          # Enterprise dashboard (Next.js)
+│   │   │   │   │   └── deployment.yaml     
+│   │   │   │   │
 │   │   │   │   ├── quality-engine/                   # Data validation and scoring service
+│   │   │   │   │   ├── deployment.yaml               # K.D for the quality engine (data validation, scoring, and active learning logic)
+│   │   │   │   │   ├── service.yaml                  # C.S to expose the quality engine internally for other services to submit validation tasks
+│   │   │   │   │   └── hpa.yaml                      # Ho.Pod.Auto to scale based on CPU/memory or custom metrics (e.g., task queue length)
+│   │   │   │   │
 │   │   │   │   ├── data-pipeline/                    # ETL and dataset processing service
+│   │   │   │   │   ├── deployment.yaml               # Kubernetes Deployment for the data pipeline service
+│   │   │   │   │   └── service.yaml                  # ClusterIP Service for internal communication with the pipeline
+│   │   │   │   │
 │   │   │   │   ├── financial-service/                # Payments, wallet, and fraud detection
+│   │   │   │   │   ├── deployment.yaml               # Kubernetes Deployment for the financial service
+│   │   │   │   │   ├── service.yaml                  # ClusterIP Service exposing the financial service
+│   │   │   │   │   ├── hpa.yaml                      # Horizontal Pod Autoscaler for the financial service
+│   │   │   │   │   └── pdb.yaml                      # Payments must survive node drains
+│   │   │   │   │
 │   │   │   │   └── analytics-service/                # Metrics, user activity, and data insights
+│   │   │   │       ├── deployment.yaml               # Kubernetes Deployment for the financial service
+│   │   │   │       └── service.yaml                  # ClusterIP Service exposing the financial service
+│   │   │   │       
 │   │   │   │
-│   │   │   ├── ingress/                              # External access configuration
-│   │   │   │   └── ingress.yaml                      # NGINX ingress with TLS (cert-manager / Let's Encrypt)
-│   │   │   │
-│   │   │   └── kustomization.yaml                    # Base-level aggregator for all resources in this directory
+│   │   │   └── ingress/                              # External access configuration
+│   │   │       └── ingress.yaml                      # NGINX ingress with TLS (cert-manager / Let's Encrypt)
+│   │   │   
+│   │   │   
 │   │   │
 │   │   ├── overlays/                                 # Environment-specific overrides and customizations
 │   │   │   ├── dev/                                  # Development environment (local / testing)
@@ -318,7 +349,9 @@ Tkllm-darija/
 │   │   │       └── network-policies/                 # Enhanced security rules (restricted traffic)
 │   │   │     
 │   │   └── components/                               # Reusable Kustomize components (advanced DRY configuration)
-│   │       └── common-limits.yaml                    # Shared resource limits/requests applied across services
+│   │       ├── kustomization.yaml                  
+│   │       ├── limits.yaml                           # (LimitRange — container/pod/PVC)
+│   │       └── quota.yaml                            # (ResourceQuota — compute/GPU/storage/services)
 │   │
 │   ├── docker/                                       # Local development environment
 │   │   ├── docker-compose.yml                        # Main local stack (Postgres, Redis, MinIO, Kafka, MailHog, etc.)

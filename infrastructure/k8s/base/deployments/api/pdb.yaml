@@ -1,0 +1,20 @@
+# =============================================================================
+# PodDisruptionBudget — NestJS API
+# Guarantees at least 1 pod is available during voluntary disruptions
+# (node drains, rolling updates, cluster upgrades).
+# minAvailable: 1 means a 2-replica deployment always keeps 1 up.
+# =============================================================================
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: api-pdb
+  namespace: tkllm-darija
+  labels:
+    app.kubernetes.io/name: api
+    app.kubernetes.io/part-of: tkllm-darija
+    app.kubernetes.io/component: api
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app: api

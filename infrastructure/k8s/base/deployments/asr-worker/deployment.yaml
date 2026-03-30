@@ -1,0 +1,98 @@
+# =============================================================================
+# Deployment — ASR Worker  (services/asr-worker)
+# Whisper large-v3 on GPU nodes. Consumes "transcription.requested" Kafka
+# topic, writes transcripts to S3 + PostgreSQL, publishes to
+# "transcription.completed". Scaled by KEDA (see keda.yaml).
+# =============================================================================
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: asr-worker
+  namespace: tkllm-darija
+  labels:
+    app.kubernetes.io/name: asr-worker
+    app.kubernetes.io/part-of: tkllm-darija
+    app.kubernetes.io/component: ml-worker
+spec:
+  replicas: 1                        # KEDA ScaledObject overrides this at runtime
+  selector:
+    matchLabels:
+      app: asr-worker
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 1
+      maxSurge: 0                    # GPU nodes are scarce — no over-provisioning
+  template:
+    metadata:
+      labels:
+        app: asr-worker
+        app.kubernetes.io/name: asr-worker
+        app.kubernetes.io/part-of: tkllm-darija
+        app.kubernetes.io/component: ml-worker
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "9091"
+        prometheus.io/path: "/metrics"
+    spec:
+      terminationGracePeriodSeconds: 120   # allow in-flight transcription to finish
+      serviceAccountName: tkllm-asr-worker
+      tolerations:
+        - key: "nvidia.com/gpu"
+          operator: "Exists"
+          effect: "NoSchedule"
+      nodeSelector:
+        node-role: gpu
+      containers:
+        - name: asr-worker
+          image: ghcr.io/biko2020/tkllm-darija/asr-worker:latest
+          imagePullPolicy: Always
+          ports:
+            - name: metrics
+              containerPort: 9091
+          envFrom:
+            - configMapRef:
+                name: common-config
+            - configMapRef:
+                name: ml-config
+            - secretRef:
+                name: tkllm-secrets
+          env:
+            # Override Kafka broker to internal cluster address
+            - name: KAFKA_BROKER
+              value: "kafka:9092"
+            - name: REDIS_URL
+              value: "redis://redis:6379"
+            - name: S3_ENDPOINT
+              valueFrom:
+                secretKeyRef:
+                  name: tkllm-secrets
+                  key: S3_ENDPOINT
+          volumeMounts:
+            - name: hf-cache
+              mountPath: /tmp/hf_cache
+          resources:
+            requests:
+              cpu: "2000m"
+              memory: "8Gi"
+              nvidia.com/gpu: "1"
+            limits:
+              cpu: "4000m"
+              memory: "16Gi"
+              nvidia.com/gpu: "1"
+          livenessProbe:
+            exec:
+              command: ["python", "-c", "import sys; sys.exit(0)"]
+            initialDelaySeconds: 60
+            periodSeconds: 30
+            timeoutSeconds: 10
+            failureThreshold: 3
+          startupProbe:
+            exec:
+              command: ["python", "-c", "import torch; sys.exit(0)"]
+            failureThreshold: 30
+            periodSeconds: 10
+      volumes:
+        - name: hf-cache
+          persistentVolumeClaim:
+            claimName: hf-cache-pvc      # ReadWriteMany EFS — shared across replicas

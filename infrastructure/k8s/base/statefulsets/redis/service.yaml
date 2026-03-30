@@ -1,0 +1,24 @@
+# =============================================================================
+# Service — Redis 7
+# Headless ClusterIP — stable DNS "redis:6379" for all consumers.
+# Never expose Redis externally.
+# =============================================================================
+apiVersion: v1
+kind: Service
+metadata:
+  name: redis
+  namespace: tkllm-darija
+  labels:
+    app.kubernetes.io/name: redis
+    app.kubernetes.io/part-of: tkllm-darija
+    app.kubernetes.io/component: cache
+spec:
+  type: ClusterIP
+  clusterIP: None
+  selector:
+    app: redis
+  ports:
+    - name: redis
+      port: 6379
+      targetPort: 6379
+      protocol: TCP

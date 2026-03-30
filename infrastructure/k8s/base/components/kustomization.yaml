@@ -1,0 +1,16 @@
+# =============================================================================
+# Kustomize Component — common-limits
+# Reusable LimitRange + ResourceQuota applied per environment via overlays.
+#
+# Usage in an overlay kustomization.yaml:
+#   components:
+#     - ../../components/common-limits
+#
+# Docs: https://kubectl.docs.kubernetes.io/references/kustomize/kustomization/components/
+# =============================================================================
+apiVersion: kustomize.config.k8s.io/v1alpha1
+kind: Component
+
+resources:
+  - limits.yaml
+  - quota.yaml

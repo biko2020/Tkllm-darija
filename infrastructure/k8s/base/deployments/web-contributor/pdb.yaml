@@ -1,0 +1,14 @@
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: web-contributor-pdb
+  namespace: tkllm-darija
+  labels:
+    app.kubernetes.io/name: web-contributor
+    app.kubernetes.io/part-of: tkllm-darija
+    app.kubernetes.io/component: frontend
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app: web-contributor

@@ -1,0 +1,42 @@
+# =============================================================================
+# LimitRange — default CPU/memory requests & limits for all pods in namespace.
+# Prevents unbounded resource consumption from pods that omit resource specs.
+# Overlays (dev/staging/prod) can patch these values via patch-resources.yaml.
+# =============================================================================
+apiVersion: v1
+kind: LimitRange
+metadata:
+  name: tkllm-default-limits
+  namespace: tkllm-darija
+  labels:
+    app.kubernetes.io/part-of: tkllm-darija
+    app.kubernetes.io/managed-by: kustomize
+spec:
+  limits:
+    # ── Container defaults ──────────────────────────────────────────────────
+    - type: Container
+      default:                      # applied when limits are NOT specified
+        cpu: "500m"
+        memory: "512Mi"
+      defaultRequest:               # applied when requests are NOT specified
+        cpu: "100m"
+        memory: "128Mi"
+      max:                          # hard ceiling per container
+        cpu: "4000m"
+        memory: "16Gi"
+      min:                          # minimum a container must request
+        cpu: "50m"
+        memory: "64Mi"
+
+    # ── Pod-level ceiling (sum of all containers) ───────────────────────────
+    - type: Pod
+      max:
+        cpu: "8000m"
+        memory: "32Gi"
+
+    # ── PVC storage ceiling ─────────────────────────────────────────────────
+    - type: PersistentVolumeClaim
+      max:
+        storage: "200Gi"
+      min:
+        storage: "1Gi"

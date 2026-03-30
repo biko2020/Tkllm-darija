@@ -1,0 +1,55 @@
+# =============================================================================
+# Services — Kafka + Zookeeper
+# Both headless (clusterIP: None) for stable StatefulSet DNS.
+# Kafka exposes both listeners; Zookeeper exposes all 3 ports.
+# =============================================================================
+
+# Zookeeper
+apiVersion: v1
+kind: Service
+metadata:
+  name: zookeeper
+  namespace: tkllm-darija
+  labels:
+    app.kubernetes.io/name: zookeeper
+    app.kubernetes.io/part-of: tkllm-darija
+    app.kubernetes.io/component: messaging
+spec:
+  type: ClusterIP
+  clusterIP: None
+  selector:
+    app: zookeeper
+  ports:
+    - name: client
+      port: 2181
+      targetPort: 2181
+    - name: follower
+      port: 2888
+      targetPort: 2888
+    - name: election
+      port: 3888
+      targetPort: 3888
+
+---
+# Kafka — ClusterIP None (headless) for stable broker DNS
+apiVersion: v1
+kind: Service
+metadata:
+  name: kafka
+  namespace: tkllm-darija
+  labels:
+    app.kubernetes.io/name: kafka
+    app.kubernetes.io/part-of: tkllm-darija
+    app.kubernetes.io/component: messaging
+spec:
+  type: ClusterIP
+  clusterIP: None
+  selector:
+    app: kafka
+  ports:
+    - name: internal
+      port: 9092
+      targetPort: 9092
+    - name: external
+      port: 29092
+      targetPort: 29092

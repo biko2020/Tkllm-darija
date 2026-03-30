@@ -1,0 +1,98 @@
+# =============================================================================
+# Deployment — Financial Service  (services/financial-service)
+# CMI, Orange Money, Inwi Money, PayPal, Wise payment adapters.
+# Contributor wallet + balance management + fraud detection.
+# 2 replicas minimum, maxUnavailable=0 — zero downtime for payouts.
+# =============================================================================
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: financial-service
+  namespace: tkllm-darija
+  labels:
+    app.kubernetes.io/name: financial-service
+    app.kubernetes.io/part-of: tkllm-darija
+    app.kubernetes.io/component: worker
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: financial-service
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 0         # zero-downtime — payments must never drop
+      maxSurge: 1
+  template:
+    metadata:
+      labels:
+        app: financial-service
+        app.kubernetes.io/name: financial-service
+        app.kubernetes.io/part-of: tkllm-darija
+        app.kubernetes.io/component: worker
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "9091"
+        prometheus.io/path: "/metrics"
+    spec:
+      terminationGracePeriodSeconds: 60
+      containers:
+        - name: financial-service
+          image: ghcr.io/biko2020/tkllm-darija/financial-service:latest
+          imagePullPolicy: Always
+          ports:
+            - name: metrics
+              containerPort: 9091
+          envFrom:
+            - configMapRef:
+                name: common-config
+            - secretRef:
+                name: tkllm-secrets
+          env:
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: tkllm-secrets
+                  key: DATABASE_URL
+            - name: KAFKA_BROKER
+              value: "kafka:9092"
+            - name: REDIS_URL
+              value: "redis://redis:6379"
+            # Payment gateway URLs
+            - name: CMI_API_URL
+              value: "https://payment.cmi.co.ma"
+            - name: CMI_CALLBACK_URL
+              value: "https://api.tkllm-darija.ma/api/v1/payments/cmi/callback"
+            - name: ORANGE_MONEY_API_URL
+              value: "https://api.orange.com/orange-money-webpay/mar/v1"
+            - name: ORANGE_MONEY_CALLBACK_URL
+              value: "https://api.tkllm-darija.ma/api/v1/payments/orange/callback"
+            - name: INWI_MONEY_CALLBACK_URL
+              value: "https://api.tkllm-darija.ma/api/v1/payments/inwi/callback"
+            - name: PAYPAL_MODE
+              value: "live"
+            - name: WISE_ENV
+              value: "live"
+          resources:
+            requests:
+              cpu: "250m"
+              memory: "512Mi"
+            limits:
+              cpu: "500m"
+              memory: "1Gi"
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 9091
+            initialDelaySeconds: 20
+            periodSeconds: 15
+            timeoutSeconds: 5
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 9091
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            timeoutSeconds: 3
+            failureThreshold: 3

@@ -1,0 +1,15 @@
+# PDB for financial-service — payments must survive node drains
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: financial-service-pdb
+  namespace: tkllm-darija
+  labels:
+    app.kubernetes.io/name: financial-service
+    app.kubernetes.io/part-of: tkllm-darija
+    app.kubernetes.io/component: worker
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app: financial-service

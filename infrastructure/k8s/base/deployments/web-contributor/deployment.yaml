@@ -1,0 +1,86 @@
+# =============================================================================
+# Deployment — Next.js Contributor Web App  (apps/web-contributor)
+# Mobile-first UI for voice recording, annotation tasks, rewards.
+# =============================================================================
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: web-contributor
+  namespace: tkllm-darija
+  labels:
+    app.kubernetes.io/name: web-contributor
+    app.kubernetes.io/part-of: tkllm-darija
+    app.kubernetes.io/component: frontend
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: web-contributor
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 0
+      maxSurge: 1
+  template:
+    metadata:
+      labels:
+        app: web-contributor
+        app.kubernetes.io/name: web-contributor
+        app.kubernetes.io/part-of: tkllm-darija
+        app.kubernetes.io/component: frontend
+    spec:
+      terminationGracePeriodSeconds: 30
+      containers:
+        - name: web-contributor
+          image: ghcr.io/biko2020/tkllm-darija/web-contributor:latest
+          imagePullPolicy: Always
+          ports:
+            - name: http
+              containerPort: 3000
+          env:
+            - name: NEXT_PUBLIC_API_URL
+              value: "https://api.tkllm-darija.ma/api/v1"
+            - name: NEXT_PUBLIC_APP_NAME
+              value: "Tkllm-darija"
+            - name: NEXT_PUBLIC_APP_ENV
+              value: "production"
+            - name: NEXT_PUBLIC_SUPABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: tkllm-secrets
+                  key: SUPABASE_URL
+            - name: NEXT_PUBLIC_SUPABASE_ANON_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: tkllm-secrets
+                  key: SUPABASE_ANON_KEY
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "256Mi"
+            limits:
+              cpu: "500m"
+              memory: "512Mi"
+          livenessProbe:
+            httpGet:
+              path: /api/healthz
+              port: 3000
+            initialDelaySeconds: 20
+            periodSeconds: 15
+            timeoutSeconds: 5
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /api/healthz
+              port: 3000
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            timeoutSeconds: 3
+            failureThreshold: 3
+      topologySpreadConstraints:
+        - maxSkew: 1
+          topologyKey: kubernetes.io/hostname
+          whenUnsatisfiable: DoNotSchedule
+          labelSelector:
+            matchLabels:
+              app: web-contributor

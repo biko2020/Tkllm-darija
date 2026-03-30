@@ -1,0 +1,34 @@
+# =============================================================================
+# Service — Weaviate
+# HTTP :8080 for REST API queries.
+# gRPC :50051 for high-throughput batch imports.
+# Prometheus metrics :2112 scraped by monitoring stack.
+# =============================================================================
+apiVersion: v1
+kind: Service
+metadata:
+  name: weaviate
+  namespace: tkllm-darija
+  labels:
+    app.kubernetes.io/name: weaviate
+    app.kubernetes.io/part-of: tkllm-darija
+    app.kubernetes.io/component: vector-store
+  annotations:
+    prometheus.io/scrape: "true"
+    prometheus.io/port: "2112"
+    prometheus.io/path: "/metrics"
+spec:
+  type: ClusterIP
+  clusterIP: None
+  selector:
+    app: weaviate
+  ports:
+    - name: http
+      port: 8080
+      targetPort: 8080
+    - name: grpc
+      port: 50051
+      targetPort: 50051
+    - name: metrics
+      port: 2112
+      targetPort: 2112

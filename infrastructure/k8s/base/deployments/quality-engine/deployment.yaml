@@ -1,0 +1,82 @@
+# =============================================================================
+# Deployment — Quality Engine  (services/quality-engine)
+# Multi-stage human + automated validation. Consumes quality.review.requested,
+# publishes quality.review.completed. Drives active learning queue.
+# =============================================================================
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: quality-engine
+  namespace: tkllm-darija
+  labels:
+    app.kubernetes.io/name: quality-engine
+    app.kubernetes.io/part-of: tkllm-darija
+    app.kubernetes.io/component: worker
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: quality-engine
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 1
+      maxSurge: 1
+  template:
+    metadata:
+      labels:
+        app: quality-engine
+        app.kubernetes.io/name: quality-engine
+        app.kubernetes.io/part-of: tkllm-darija
+        app.kubernetes.io/component: worker
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "9091"
+        prometheus.io/path: "/metrics"
+    spec:
+      terminationGracePeriodSeconds: 60
+      containers:
+        - name: quality-engine
+          image: ghcr.io/biko2020/tkllm-darija/quality-engine:latest
+          imagePullPolicy: Always
+          ports:
+            - name: metrics
+              containerPort: 9091
+          envFrom:
+            - configMapRef:
+                name: common-config
+            - secretRef:
+                name: tkllm-secrets
+          env:
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: tkllm-secrets
+                  key: DATABASE_URL
+            - name: KAFKA_BROKER
+              value: "kafka:9092"
+            - name: REDIS_URL
+              value: "redis://redis:6379"
+          resources:
+            requests:
+              cpu: "250m"
+              memory: "512Mi"
+            limits:
+              cpu: "1000m"
+              memory: "2Gi"
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 9091
+            initialDelaySeconds: 20
+            periodSeconds: 15
+            timeoutSeconds: 5
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 9091
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            timeoutSeconds: 3
+            failureThreshold: 3

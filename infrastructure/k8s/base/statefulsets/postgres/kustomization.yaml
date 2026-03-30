@@ -1,0 +1,17 @@
+# =============================================================================
+# Kustomization — postgres
+# Aggregates all PostgreSQL resources for this sub-component.
+# Referenced from base/kustomization.yaml via: - statefulsets/postgres
+# =============================================================================
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: tkllm-darija
+
+resources:
+  - infrastructure.yaml
+  - service.yaml
+
+commonLabels:
+  app.kubernetes.io/component: database
+  app.kubernetes.io/name: postgres

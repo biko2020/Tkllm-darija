@@ -1,0 +1,24 @@
+# =============================================================================
+# Service — PostgreSQL 16 + TimescaleDB
+# ClusterIP: internal only — never exposed outside the cluster.
+# Port 5432 accessible as "postgres:5432" from any pod in namespace.
+# =============================================================================
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgres
+  namespace: tkllm-darija
+  labels:
+    app.kubernetes.io/name: postgres
+    app.kubernetes.io/part-of: tkllm-darija
+    app.kubernetes.io/component: database
+spec:
+  type: ClusterIP
+  clusterIP: None          # Headless — required for StatefulSet stable DNS
+  selector:
+    app: postgres
+  ports:
+    - name: postgres
+      port: 5432
+      targetPort: 5432
+      protocol: TCP
