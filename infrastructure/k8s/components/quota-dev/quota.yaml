@@ -1,0 +1,46 @@
+# =============================================================================
+# ResourceQuota — dev
+# Conservative caps for a local or small cloud dev cluster.
+# No GPU quota — ASR worker runs on CPU in dev.
+# Enough headroom for all 8 services at 1 replica each.
+# =============================================================================
+apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: tkllm-resource-quota
+  namespace: tkllm-darija
+  labels:
+    app.kubernetes.io/part-of: tkllm-darija
+    app.kubernetes.io/managed-by: kustomize
+    component: quota-dev
+spec:
+  hard:
+    # ── Compute ──────────────────────────────────────────────────────────────
+    requests.cpu:     "4"
+    requests.memory:  "8Gi"
+    limits.cpu:       "16"
+    limits.memory:    "24Gi"
+
+    # ── GPU — none in dev ────────────────────────────────────────────────────
+    requests.nvidia.com/gpu: "0"
+    limits.nvidia.com/gpu:   "0"
+
+    # ── Workloads ────────────────────────────────────────────────────────────
+    pods:                     "20"
+    count/deployments.apps:   "15"
+    count/statefulsets.apps:  "8"
+    count/jobs.batch:         "10"
+    count/cronjobs.batch:     "5"
+
+    # ── Storage ──────────────────────────────────────────────────────────────
+    persistentvolumeclaims:   "15"
+    requests.storage:         "200Gi"
+
+    # ── Services ─────────────────────────────────────────────────────────────
+    services:                 "20"
+    services.loadbalancers:   "1"
+    services.nodeports:       "0"
+
+    # ── Config & Secrets ─────────────────────────────────────────────────────
+    configmaps:               "20"
+    secrets:                  "20"

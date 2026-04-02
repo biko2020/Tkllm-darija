@@ -1,0 +1,45 @@
+# =============================================================================
+# ResourceQuota — staging
+# Mid-range caps sufficient for 2-replica services + load testing.
+# Allows 1 GPU node for ASR worker integration testing.
+# =============================================================================
+apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: tkllm-resource-quota
+  namespace: tkllm-darija
+  labels:
+    app.kubernetes.io/part-of: tkllm-darija
+    app.kubernetes.io/managed-by: kustomize
+    component: quota-staging
+spec:
+  hard:
+    # ── Compute ──────────────────────────────────────────────────────────────
+    requests.cpu:     "12"
+    requests.memory:  "24Gi"
+    limits.cpu:       "36"
+    limits.memory:    "72Gi"
+
+    # ── GPU — 1 node for ASR integration tests ───────────────────────────────
+    requests.nvidia.com/gpu: "1"
+    limits.nvidia.com/gpu:   "1"
+
+    # ── Workloads ────────────────────────────────────────────────────────────
+    pods:                     "40"
+    count/deployments.apps:   "18"
+    count/statefulsets.apps:  "10"
+    count/jobs.batch:         "15"
+    count/cronjobs.batch:     "8"
+
+    # ── Storage ──────────────────────────────────────────────────────────────
+    persistentvolumeclaims:   "18"
+    requests.storage:         "500Gi"
+
+    # ── Services ─────────────────────────────────────────────────────────────
+    services:                 "25"
+    services.loadbalancers:   "1"
+    services.nodeports:       "0"
+
+    # ── Config & Secrets ─────────────────────────────────────────────────────
+    configmaps:               "25"
+    secrets:                  "25"

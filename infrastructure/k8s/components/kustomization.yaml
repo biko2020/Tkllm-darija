@@ -1,0 +1,41 @@
+# =============================================================================
+# components/ — Reusable Kustomize Components
+# =============================================================================
+# This directory contains independent, composable Kustomize components.
+# Each sub-directory is a standalone Component (apiVersion: kustomize.config.k8s.io/v1alpha1)
+# that overlays include selectively.
+#
+# Available components:
+#
+#   common-limits/   — LimitRange: default CPU/memory requests + limits for
+#                      all containers, pods, and PVCs in the namespace.
+#                      Apply in every overlay.
+#
+#   quota-dev/       — ResourceQuota sized for a local / small cloud dev cluster.
+#                      Low compute caps, no GPU quota.
+#
+#   quota-staging/   — ResourceQuota for a pre-production cluster.
+#                      Mid-range caps, 1 GPU node allowed.
+#
+#   quota-prod/      — ResourceQuota for full production.
+#                      High compute caps, 5 GPU nodes, strict service limits.
+#
+#   pod-security/    — PodSecurity admission label (restricted standard)
+#                      applied to the tkllm-darija namespace. Enforces:
+#                      no privileged containers, read-only root FS, dropped
+#                      capabilities, non-root users.
+#
+# Usage in an overlay kustomization.yaml:
+#
+#   components:
+#     - ../../components/common-limits
+#     - ../../components/quota-prod
+#     - ../../components/pod-security
+#
+# Docs: https://kubectl.docs.kubernetes.io/references/kustomize/kustomization/components/
+# =============================================================================
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+# This root file is documentation only — it does not aggregate sub-components.
+# Reference each sub-component directly in your overlay.

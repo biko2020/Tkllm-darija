@@ -1,0 +1,95 @@
+# =============================================================================
+# Pod Security — namespace admission label + SecurityContext defaults
+#
+# Part 1: PodSecurity admission label on the namespace.
+#   "restricted" standard = no privileged containers, no host networking,
+#   no host PID/IPC, required seccomp, dropped ALL capabilities,
+#   non-root enforcement, read-only root filesystem.
+#
+#   Warn mode shows violations without blocking; enforce mode blocks them.
+#   Use warn in dev/staging so workloads can be fixed before prod enforces.
+#
+# Part 2: A cluster-scoped default SecurityContext via a ValidatingWebhook
+#   is NOT done here — use OPA Gatekeeper or Kyverno policies for that.
+#   This component patches the namespace labels only.
+#
+# Docs:
+#   https://kubernetes.io/docs/concepts/security/pod-security-admission/
+#   https://kubernetes.io/docs/concepts/security/pod-security-standards/
+# =============================================================================
+
+# Patch the tkllm-darija namespace with PodSecurity labels.
+# Overlays set `enforce` vs `warn` via patch-resources.yaml:
+#   prod  → enforce: restricted
+#   staging → warn: restricted
+#   dev   → warn: baseline (more permissive for fast iteration)
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: tkllm-darija
+  labels:
+    # Enforce mode — pods violating "restricted" are rejected at admission
+    pod-security.kubernetes.io/enforce: "restricted"
+    pod-security.kubernetes.io/enforce-version: "latest"
+    # Warn mode — shows violation warnings without blocking (for CI visibility)
+    pod-security.kubernetes.io/warn: "restricted"
+    pod-security.kubernetes.io/warn-version: "latest"
+    # Audit mode — records violations in audit log
+    pod-security.kubernetes.io/audit: "restricted"
+    pod-security.kubernetes.io/audit-version: "latest"
+
+---
+# =============================================================================
+# SecurityContext defaults applied to every Deployment via Kyverno mutating
+# policy (recommended) OR manually set in base deployments.
+#
+# The ConfigMap below documents the required SecurityContext spec that every
+# container in the namespace must satisfy under "restricted" PodSecurity.
+# Use this as a reference when writing Dockerfiles and Deployment specs.
+# =============================================================================
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: pod-security-reference
+  namespace: tkllm-darija
+  labels:
+    app.kubernetes.io/part-of: tkllm-darija
+    component: pod-security
+data:
+  required-security-context: |
+    # Every container must include this securityContext block:
+    securityContext:
+      allowPrivilegeEscalation: false
+      readOnlyRootFilesystem: true
+      runAsNonRoot: true
+      runAsUser: 1000          # non-root UID
+      runAsGroup: 1000
+      capabilities:
+        drop:
+          - ALL
+      seccompProfile:
+        type: RuntimeDefault   # or Localhost with a custom profile
+
+    # Pod-level securityContext:
+    securityContext:
+      fsGroup: 1000
+      runAsNonRoot: true
+      seccompProfile:
+        type: RuntimeDefault
+
+  exceptions: |
+    # Services that require relaxed settings and why:
+    #
+    # asr-worker:
+    #   - readOnlyRootFilesystem: false
+    #     Reason: Whisper writes model cache to /tmp/hf_cache
+    #     Mitigation: tmpfs emptyDir mounted at /tmp
+    #
+    # postgres (timescale/timescaledb-ha):
+    #   - runAsUser: 1000 (set by image)
+    #   - readOnlyRootFilesystem: false (postgres writes WAL)
+    #
+    # All GPU workloads:
+    #   - nvidia.com/gpu resource requires device plugin DaemonSet
+    #     which is privileged — scoped to nvidia-device-plugin namespace,
+    #     not tkllm-darija namespace

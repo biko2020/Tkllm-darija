@@ -423,9 +423,27 @@ Tkllm-darija/
 │   │   │           └── ingress-strict.yaml 
 │   │   │     
 │   │   └── components/                               # Reusable Kustomize components (advanced DRY configuration)
-│   │       ├── kustomization.yaml                  
-│   │       ├── limits.yaml                           # (LimitRange — container/pod/PVC)
-│   │       └── quota.yaml                            # (ResourceQuota — compute/GPU/storage/services)
+│   │       ├── kustomization.yaml                    # Root Kustomize file that aggregates all reusable components
+│   │       │
+│   │       ├── common-limits/                        # Common resource limits and requests for containers, pods, and PVCs
+│   │       │   ├── kustomization.yaml                # Kustomize config to export the common limits component
+│   │       │   └── common-limits.yaml                # LimitRange definition (default/min/max requests & limits for CPU, memory, storage)
+│   │       │
+│   │       ├── quota-dev/                            # ResourceQuota tailored for development environment (relaxed limits)
+│   │       │   ├── kustomization.yaml                # Kustomize config for dev quota component
+│   │       │   └── quota.yaml                        # ResourceQuota for dev (compute, GPU, storage, and object counts)
+│   │       │
+│   │       ├── quota-staging/                        # ResourceQuota tailored for staging environment
+│   │       │   ├── kustomization.yaml                # Kustomize config for staging quota component
+│   │       │   └── quota.yaml                        # ResourceQuota for staging (moderate limits)
+│   │       │
+│   │       ├── quota-prod/                           # ResourceQuota tailored for production environment (strict + high availability)
+│   │       │   ├── kustomization.yaml                # Kustomize config for production quota component
+│   │       │   └── quota.yaml                        # ResourceQuota for prod (compute, GPU, storage, services, and pods)
+│   │       │
+│   │       └── pod-security/                         # Pod Security Standards and security policies
+│   │           ├── kustomization.yaml                # Kustomize config to export pod security policies
+│   │           └── pod-security.yaml                 # PodSecurityPolicy / Pod Security Admission configuration (restricted, baseline, privileged)
 │   │
 │   ├── docker/                                       # Local development environment
 │   │   ├── docker-compose.yml                        # Main local stack (Postgres, Redis, MinIO, Kafka, MailHog, etc.)

@@ -1,0 +1,59 @@
+# =============================================================================
+# LimitRange — common-limits
+# Applied in every environment (dev / staging / prod).
+# Sets default CPU/memory requests + hard ceilings for containers, pods,
+# and PVCs. Overlays patch these values via patch-resources.yaml.
+#
+# Why this matters:
+#   Without a LimitRange, pods that omit resource specs get scheduled with
+#   no resource accounting — they can starve neighbouring pods and trigger
+#   OOMKills silently. These defaults ensure every container is accounted for.
+# =============================================================================
+apiVersion: v1
+kind: LimitRange
+metadata:
+  name: tkllm-default-limits
+  namespace: tkllm-darija
+  labels:
+    app.kubernetes.io/part-of: tkllm-darija
+    app.kubernetes.io/managed-by: kustomize
+    component: common-limits
+spec:
+  limits:
+    # ── Container defaults ──────────────────────────────────────────────────
+    - type: Container
+      # Applied when a container does NOT specify limits/requests:
+      default:
+        cpu: "500m"
+        memory: "512Mi"
+      defaultRequest:
+        cpu: "100m"
+        memory: "128Mi"
+      # Hard ceiling — no container may exceed these values:
+      max:
+        cpu: "8000m"
+        memory: "32Gi"
+      # Floor — prevents zero-resource containers hiding in the cluster:
+      min:
+        cpu: "10m"
+        memory: "32Mi"
+      # Ratio enforcement — limits must be ≤ 10× requests to prevent over-promising:
+      maxLimitRequestRatio:
+        cpu: "10"
+        memory: "8"
+
+    # ── Pod-level ceiling (sum of all init + app containers) ────────────────
+    - type: Pod
+      max:
+        cpu: "16000m"
+        memory: "64Gi"
+      min:
+        cpu: "10m"
+        memory: "32Mi"
+
+    # ── PersistentVolumeClaim storage ceiling ───────────────────────────────
+    - type: PersistentVolumeClaim
+      max:
+        storage: "500Gi"
+      min:
+        storage: "1Gi"
