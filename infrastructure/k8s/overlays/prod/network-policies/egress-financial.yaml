@@ -1,0 +1,57 @@
+# =============================================================================
+# NetworkPolicy — prod egress for financial-service
+# Locks down outbound traffic to only payment gateway IP ranges + internal.
+# =============================================================================
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: financial-service-egress-prod
+  namespace: tkllm-darija
+  labels:
+    environment: prod
+spec:
+  podSelector:
+    matchLabels:
+      app: financial-service
+  policyTypes:
+    - Egress
+  egress:
+    # Internal services
+    - to:
+        - podSelector:
+            matchLabels:
+              app: postgres
+      ports:
+        - port: 5432
+    - to:
+        - podSelector:
+            matchLabels:
+              app: redis
+      ports:
+        - port: 6379
+    - to:
+        - podSelector:
+            matchLabels:
+              app: kafka
+      ports:
+        - port: 9092
+
+    # Payment gateways — HTTPS only
+    # CMI (testpayment.cmi.co.ma + payment.cmi.co.ma)
+    - to:
+        - ipBlock:
+            cidr: "0.0.0.0/0"
+            except:
+              - "10.0.0.0/8"
+              - "172.16.0.0/12"
+              - "192.168.0.0/16"
+      ports:
+        - port: 443
+          protocol: TCP
+
+    # DNS
+    - ports:
+        - port: 53
+          protocol: UDP
+        - port: 53
+          protocol: TCP

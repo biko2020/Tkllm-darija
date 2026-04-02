@@ -1,0 +1,76 @@
+# =============================================================================
+# Patch — replicas (staging)
+# 2 replicas for user-facing services (enough to test HA failover).
+# 1 replica for background workers.
+# =============================================================================
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: api
+  namespace: tkllm-darija
+spec:
+  replicas: 2
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: web-contributor
+  namespace: tkllm-darija
+spec:
+  replicas: 2
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: web-b2b
+  namespace: tkllm-darija
+spec:
+  replicas: 2
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: quality-engine
+  namespace: tkllm-darija
+spec:
+  replicas: 2
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: financial-service
+  namespace: tkllm-darija
+spec:
+  replicas: 2
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: analytics-service
+  namespace: tkllm-darija
+spec:
+  replicas: 1
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: data-pipeline
+  namespace: tkllm-darija
+spec:
+  replicas: 1
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: asr-worker
+  namespace: tkllm-darija
+spec:
+  replicas: 1

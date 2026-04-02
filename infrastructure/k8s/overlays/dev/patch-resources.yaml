@@ -1,0 +1,175 @@
+# =============================================================================
+# Patch — resources (dev)
+# Reduces CPU/memory requests and limits for every Deployment in dev.
+# Uses strategic merge patch — only the fields listed here are changed.
+# =============================================================================
+
+# ── API ───────────────────────────────────────────────────────────────────────
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: api
+  namespace: tkllm-darija
+spec:
+  template:
+    spec:
+      containers:
+        - name: api
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "256Mi"
+            limits:
+              cpu: "500m"
+              memory: "512Mi"
+
+---
+# ── web-contributor ───────────────────────────────────────────────────────────
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: web-contributor
+  namespace: tkllm-darija
+spec:
+  template:
+    spec:
+      containers:
+        - name: web-contributor
+          resources:
+            requests:
+              cpu: "50m"
+              memory: "128Mi"
+            limits:
+              cpu: "250m"
+              memory: "256Mi"
+
+---
+# ── web-b2b ───────────────────────────────────────────────────────────────────
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: web-b2b
+  namespace: tkllm-darija
+spec:
+  template:
+    spec:
+      containers:
+        - name: web-b2b
+          resources:
+            requests:
+              cpu: "50m"
+              memory: "128Mi"
+            limits:
+              cpu: "250m"
+              memory: "256Mi"
+
+---
+# ── quality-engine ────────────────────────────────────────────────────────────
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: quality-engine
+  namespace: tkllm-darija
+spec:
+  template:
+    spec:
+      containers:
+        - name: quality-engine
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "128Mi"
+            limits:
+              cpu: "500m"
+              memory: "512Mi"
+
+---
+# ── analytics-service ─────────────────────────────────────────────────────────
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: analytics-service
+  namespace: tkllm-darija
+spec:
+  template:
+    spec:
+      containers:
+        - name: analytics-service
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "128Mi"
+            limits:
+              cpu: "500m"
+              memory: "512Mi"
+
+---
+# ── financial-service ─────────────────────────────────────────────────────────
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: financial-service
+  namespace: tkllm-darija
+spec:
+  template:
+    spec:
+      containers:
+        - name: financial-service
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "128Mi"
+            limits:
+              cpu: "250m"
+              memory: "256Mi"
+
+---
+# ── data-pipeline ─────────────────────────────────────────────────────────────
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: data-pipeline
+  namespace: tkllm-darija
+spec:
+  template:
+    spec:
+      containers:
+        - name: data-pipeline
+          resources:
+            requests:
+              cpu: "250m"
+              memory: "512Mi"
+            limits:
+              cpu: "1000m"
+              memory: "2Gi"
+
+---
+# ── asr-worker — CPU mode in dev (no GPU required) ───────────────────────────
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: asr-worker
+  namespace: tkllm-darija
+spec:
+  template:
+    spec:
+      # Remove GPU node selector + taint tolerations in dev
+      tolerations: []
+      nodeSelector: {}
+      containers:
+        - name: asr-worker
+          env:
+            - name: WHISPER_DEVICE
+              value: "cpu"
+            - name: WHISPER_MODEL
+              value: "small"         # small model fits CPU dev environment
+            - name: WHISPER_COMPUTE_TYPE
+              value: "int8"
+          resources:
+            requests:
+              cpu: "500m"
+              memory: "2Gi"
+            limits:
+              cpu: "2000m"
+              memory: "4Gi"
+          # Remove GPU resource requests

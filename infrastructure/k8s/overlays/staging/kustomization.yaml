@@ -1,0 +1,54 @@
+# =============================================================================
+# Overlay — staging
+# Pre-production mirror: same images as prod, reduced replicas, real secrets
+# via ESO, production-like resource limits.
+# Used for integration testing, QA sign-off, and load testing.
+#
+# Apply:
+#   kubectl apply -k infrastructure/k8s/overlays/staging
+# =============================================================================
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: tkllm-darija
+
+resources:
+  - ../../base
+
+components:
+  - ../../components
+
+patches:
+  # Replica counts — 1 or 2 per service (enough to validate HA logic)
+  - path: patch-replicas.yaml
+
+  # Staging-specific resource limits (between dev and prod)
+  - path: patch-resources.yaml
+
+  # Staging ConfigMap overrides (playground still off, debug logging on)
+  - path: patch-configmap.yaml
+
+images:
+  - name: ghcr.io/biko2020/tkllm-darija/api
+    newTag: staging
+  - name: ghcr.io/biko2020/tkllm-darija/web-contributor
+    newTag: staging
+  - name: ghcr.io/biko2020/tkllm-darija/web-b2b
+    newTag: staging
+  - name: ghcr.io/biko2020/tkllm-darija/asr-worker
+    newTag: staging
+  - name: ghcr.io/biko2020/tkllm-darija/quality-engine
+    newTag: staging
+  - name: ghcr.io/biko2020/tkllm-darija/analytics-service
+    newTag: staging
+  - name: ghcr.io/biko2020/tkllm-darija/financial-service
+    newTag: staging
+  - name: ghcr.io/biko2020/tkllm-darija/data-pipeline
+    newTag: staging
+
+commonLabels:
+  environment: staging
+  app.kubernetes.io/managed-by: kustomize
+
+commonAnnotations:
+  tkllm-darija/environment: staging

@@ -1,0 +1,20 @@
+# =============================================================================
+# Patch — ConfigMap overrides (prod)
+# Playground off, strict CORS, production Sentry, low trace sampling.
+# =============================================================================
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: api-config
+  namespace: tkllm-darija
+data:
+  NODE_ENV:                  "production"
+  GRAPHQL_PLAYGROUND:        "false"
+  GRAPHQL_INTROSPECTION:     "false"
+  GRAPHQL_DEBUG:             "false"
+  LOG_LEVEL:                 "warn"
+  THROTTLE_TTL:              "60"
+  THROTTLE_LIMIT:            "120"
+  CORS_ORIGINS:              "https://app.tkllm-darija.ma,https://b2b.tkllm-darija.ma"
+  SENTRY_TRACES_SAMPLE_RATE: "0.1"
+  SENTRY_ENVIRONMENT:        "production"

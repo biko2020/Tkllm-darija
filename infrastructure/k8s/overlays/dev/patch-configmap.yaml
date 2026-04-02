@@ -1,0 +1,18 @@
+# =============================================================================
+# Patch — ConfigMap overrides (dev)
+# Enables GraphQL playground, introspection, and debug logging.
+# =============================================================================
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: api-config
+  namespace: tkllm-darija
+data:
+  NODE_ENV:                "development"
+  GRAPHQL_PLAYGROUND:      "true"
+  GRAPHQL_INTROSPECTION:   "true"
+  GRAPHQL_DEBUG:           "true"
+  LOG_LEVEL:               "debug"
+  THROTTLE_LIMIT:          "1000"     # relaxed rate limit for dev testing
+  CORS_ORIGINS:            "*"        # allow all origins in dev
+  SENTRY_TRACES_SAMPLE_RATE: "1.0"   # trace everything in dev

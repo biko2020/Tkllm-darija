@@ -1,0 +1,68 @@
+# =============================================================================
+# Overlay — prod
+# Full production configuration:
+#   - SHA-pinned image tags (set by CI/CD — never :latest in prod)
+#   - Production resource limits (full CPU/memory from base)
+#   - HA replica counts (2+ for every user-facing service)
+#   - Aggressive HPA thresholds
+#   - Enhanced NetworkPolicies
+#   - ESO-managed secrets from AWS SSM
+#   - GPU ASR workers with KEDA scale-to-zero
+#   - Payment gateways pointing to live endpoints
+#
+# Apply:
+#   kubectl apply -k infrastructure/k8s/overlays/prod
+#
+# ⚠️  Always run --dry-run first:
+#   kubectl diff -k infrastructure/k8s/overlays/prod
+# =============================================================================
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: tkllm-darija
+
+resources:
+  - ../../base
+  - network-policies/egress-financial.yaml
+  - network-policies/egress-api.yaml
+  - network-policies/ingress-strict.yaml
+
+components:
+  - ../../components
+
+patches:
+  # Production resource limits (base values — no downgrade needed)
+  - path: patch-resources.yaml
+
+  # Production HPA — tighter thresholds, wider max replicas
+  - path: patch-hpa.yaml
+
+  # Production ConfigMap — playground off, strict CORS, low sampling
+  - path: patch-configmap.yaml
+
+# ── Image tags — set by CI/CD on every release (never :latest) ───────────────
+# Example: kustomize edit set image ghcr.io/.../api:sha-abc1234
+images:
+  - name: ghcr.io/biko2020/tkllm-darija/api
+    newTag: latest             # CI/CD replaces this with sha-<commit>
+  - name: ghcr.io/biko2020/tkllm-darija/web-contributor
+    newTag: latest
+  - name: ghcr.io/biko2020/tkllm-darija/web-b2b
+    newTag: latest
+  - name: ghcr.io/biko2020/tkllm-darija/asr-worker
+    newTag: latest
+  - name: ghcr.io/biko2020/tkllm-darija/quality-engine
+    newTag: latest
+  - name: ghcr.io/biko2020/tkllm-darija/analytics-service
+    newTag: latest
+  - name: ghcr.io/biko2020/tkllm-darija/financial-service
+    newTag: latest
+  - name: ghcr.io/biko2020/tkllm-darija/data-pipeline
+    newTag: latest
+
+commonLabels:
+  environment: prod
+  app.kubernetes.io/managed-by: kustomize
+
+commonAnnotations:
+  tkllm-darija/environment: prod

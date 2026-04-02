@@ -1,0 +1,19 @@
+# =============================================================================
+# Patch — ConfigMap overrides (staging)
+# Playground off (mirrors prod), info logging, relaxed CORS for QA tools.
+# =============================================================================
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: api-config
+  namespace: tkllm-darija
+data:
+  NODE_ENV:                  "staging"
+  GRAPHQL_PLAYGROUND:        "false"
+  GRAPHQL_INTROSPECTION:     "false"
+  GRAPHQL_DEBUG:             "false"
+  LOG_LEVEL:                 "info"
+  THROTTLE_LIMIT:            "200"
+  CORS_ORIGINS:              "https://staging-app.tkllm-darija.ma,https://staging-b2b.tkllm-darija.ma"
+  SENTRY_TRACES_SAMPLE_RATE: "0.5"
+  SENTRY_ENVIRONMENT:        "staging"

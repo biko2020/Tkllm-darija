@@ -1,0 +1,71 @@
+# =============================================================================
+# Overlay — dev
+# Extends base with dev-specific overrides:
+#   - Lower CPU/memory limits (save cost on local / cloud dev cluster)
+#   - dev/latest image tags (fast iteration)
+#   - Single replicas for all workloads
+#   - GraphQL playground enabled
+#   - KEDA disabled (replaced with fixed 1-replica ASR worker)
+#   - External secrets swapped for local secret-template.yaml
+#
+# Apply:
+#   kubectl apply -k infrastructure/k8s/overlays/dev
+# Dry-run:
+#   kubectl diff -k infrastructure/k8s/overlays/dev
+# =============================================================================
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: tkllm-darija
+
+# ── Extend base ───────────────────────────────────────────────────────────────
+resources:
+  - ../../base
+
+# ── Components ────────────────────────────────────────────────────────────────
+components:
+  - ../../components          # LimitRange + ResourceQuota (patched below)
+
+# ── Strategic merge patches ───────────────────────────────────────────────────
+patches:
+  # Lower resource limits for all workloads
+  - path: patch-resources.yaml
+
+  # Single replica for every Deployment in dev
+  - path: patch-replicas.yaml
+
+  # Use dev/latest image tags
+  - path: patch-image.yaml
+
+  # Swap ExternalSecret for plain secret-template (no ESO needed in dev)
+  - path: patch-secrets.yaml
+
+  # Enable GraphQL playground in dev
+  - path: patch-configmap.yaml
+
+# ── Image overrides — all point to :dev tag ───────────────────────────────────
+images:
+  - name: ghcr.io/biko2020/tkllm-darija/api
+    newTag: dev
+  - name: ghcr.io/biko2020/tkllm-darija/web-contributor
+    newTag: dev
+  - name: ghcr.io/biko2020/tkllm-darija/web-b2b
+    newTag: dev
+  - name: ghcr.io/biko2020/tkllm-darija/asr-worker
+    newTag: dev
+  - name: ghcr.io/biko2020/tkllm-darija/quality-engine
+    newTag: dev
+  - name: ghcr.io/biko2020/tkllm-darija/analytics-service
+    newTag: dev
+  - name: ghcr.io/biko2020/tkllm-darija/financial-service
+    newTag: dev
+  - name: ghcr.io/biko2020/tkllm-darija/data-pipeline
+    newTag: dev
+
+# ── Override common labels ────────────────────────────────────────────────────
+commonLabels:
+  environment: dev
+  app.kubernetes.io/managed-by: kustomize
+
+commonAnnotations:
+  tkllm-darija/environment: dev

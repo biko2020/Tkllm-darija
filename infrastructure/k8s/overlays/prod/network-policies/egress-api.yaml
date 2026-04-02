@@ -1,0 +1,55 @@
+# =============================================================================
+# NetworkPolicy — prod egress for API pods
+# Replaces base allow-all-HTTPS egress with explicit destination allowlist.
+# =============================================================================
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: api-egress-prod
+  namespace: tkllm-darija
+  labels:
+    environment: prod
+spec:
+  podSelector:
+    matchLabels:
+      app: api
+  policyTypes:
+    - Egress
+  egress:
+    # Internal services
+    - to:
+        - podSelector:
+            matchLabels:
+              app: postgres
+      ports:
+        - port: 5432
+    - to:
+        - podSelector:
+            matchLabels:
+              app: redis
+      ports:
+        - port: 6379
+    - to:
+        - podSelector:
+            matchLabels:
+              app: kafka
+      ports:
+        - port: 9092
+    - to:
+        - podSelector:
+            matchLabels:
+              app: weaviate
+      ports:
+        - port: 8080
+
+    # External HTTPS — Supabase, Twilio, Sentry, SendGrid
+    - ports:
+        - port: 443
+          protocol: TCP
+
+    # DNS
+    - ports:
+        - port: 53
+          protocol: UDP
+        - port: 53
+          protocol: TCP

@@ -1,0 +1,165 @@
+# =============================================================================
+# Patch — resources (staging)
+# Mid-tier limits — enough to run real load tests, cheaper than prod.
+# =============================================================================
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: api
+  namespace: tkllm-darija
+spec:
+  template:
+    spec:
+      containers:
+        - name: api
+          resources:
+            requests:
+              cpu: "200m"
+              memory: "384Mi"
+            limits:
+              cpu: "750m"
+              memory: "768Mi"
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: web-contributor
+  namespace: tkllm-darija
+spec:
+  template:
+    spec:
+      containers:
+        - name: web-contributor
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "192Mi"
+            limits:
+              cpu: "400m"
+              memory: "384Mi"
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: web-b2b
+  namespace: tkllm-darija
+spec:
+  template:
+    spec:
+      containers:
+        - name: web-b2b
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "192Mi"
+            limits:
+              cpu: "400m"
+              memory: "384Mi"
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: quality-engine
+  namespace: tkllm-darija
+spec:
+  template:
+    spec:
+      containers:
+        - name: quality-engine
+          resources:
+            requests:
+              cpu: "200m"
+              memory: "384Mi"
+            limits:
+              cpu: "750m"
+              memory: "1Gi"
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: financial-service
+  namespace: tkllm-darija
+spec:
+  template:
+    spec:
+      containers:
+        - name: financial-service
+          resources:
+            requests:
+              cpu: "200m"
+              memory: "384Mi"
+            limits:
+              cpu: "400m"
+              memory: "768Mi"
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: analytics-service
+  namespace: tkllm-darija
+spec:
+  template:
+    spec:
+      containers:
+        - name: analytics-service
+          resources:
+            requests:
+              cpu: "200m"
+              memory: "384Mi"
+            limits:
+              cpu: "750m"
+              memory: "1Gi"
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: data-pipeline
+  namespace: tkllm-darija
+spec:
+  template:
+    spec:
+      containers:
+        - name: data-pipeline
+          resources:
+            requests:
+              cpu: "400m"
+              memory: "768Mi"
+            limits:
+              cpu: "1500m"
+              memory: "3Gi"
+
+---
+# ASR worker — still CPU mode in staging (GPU nodes expensive)
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: asr-worker
+  namespace: tkllm-darija
+spec:
+  template:
+    spec:
+      tolerations: []
+      nodeSelector: {}
+      containers:
+        - name: asr-worker
+          env:
+            - name: WHISPER_DEVICE
+              value: "cpu"
+            - name: WHISPER_MODEL
+              value: "medium"
+            - name: WHISPER_COMPUTE_TYPE
+              value: "int8"
+          resources:
+            requests:
+              cpu: "1000m"
+              memory: "4Gi"
+            limits:
+              cpu: "3000m"
+              memory: "8Gi"

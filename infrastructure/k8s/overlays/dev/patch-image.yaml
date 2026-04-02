@@ -1,0 +1,117 @@
+# =============================================================================
+# Patch — images (dev)
+# Forces imagePullPolicy: Always so dev clusters always pull :dev tags.
+# Image newTag is set in kustomization.yaml images[] block above.
+# =============================================================================
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: api
+  namespace: tkllm-darija
+spec:
+  template:
+    spec:
+      containers:
+        - name: api
+          imagePullPolicy: Always
+          env:
+            - name: NODE_ENV
+              value: development
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: web-contributor
+  namespace: tkllm-darija
+spec:
+  template:
+    spec:
+      containers:
+        - name: web-contributor
+          imagePullPolicy: Always
+          env:
+            - name: NEXT_PUBLIC_APP_ENV
+              value: development
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: web-b2b
+  namespace: tkllm-darija
+spec:
+  template:
+    spec:
+      containers:
+        - name: web-b2b
+          imagePullPolicy: Always
+          env:
+            - name: NEXT_PUBLIC_APP_ENV
+              value: development
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: asr-worker
+  namespace: tkllm-darija
+spec:
+  template:
+    spec:
+      containers:
+        - name: asr-worker
+          imagePullPolicy: Always
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: quality-engine
+  namespace: tkllm-darija
+spec:
+  template:
+    spec:
+      containers:
+        - name: quality-engine
+          imagePullPolicy: Always
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: financial-service
+  namespace: tkllm-darija
+spec:
+  template:
+    spec:
+      containers:
+        - name: financial-service
+          imagePullPolicy: Always
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: analytics-service
+  namespace: tkllm-darija
+spec:
+  template:
+    spec:
+      containers:
+        - name: analytics-service
+          imagePullPolicy: Always
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: data-pipeline
+  namespace: tkllm-darija
+spec:
+  template:
+    spec:
+      containers:
+        - name: data-pipeline
+          imagePullPolicy: Always

@@ -398,19 +398,29 @@ Tkllm-darija/
 │   │   ├── overlays/                                 # Environment-specific overrides and customizations
 │   │   │   ├── dev/                                  # Development environment (local / testing)
 │   │   │   │   ├── kustomization.yaml                # Extends base + applies dev-specific patches
-│   │   │   │   ├── patch-resources.yaml              # Lower CPU/memory limits for dev
+│   │   │   │   ├── patch-configmap.yaml              # 
 │   │   │   │   ├── patch-image.yaml                  # Use dev/latest image tags
+│   │   │   │   ├── patch-replicas.yaml
+│   │   │   │   ├── patch-resources.yaml              # Lower CPU/memory limits for dev
+│   │   │   │   ├── patch-secrets.yaml
 │   │   │   │   └── keda/                             # Optional autoscaling config for development
+│   │   │   │       └── scaledobject-dev.yaml  
 │   │   │   │   
 │   │   │   ├── staging/                              # Pre-production environment
 │   │   │   │   ├── kustomization.yaml                # Extends base with staging configs
+│   │   │   │   ├── patch-configmap.yaml 
+│   │   │   │   ├── patch-resources.yaml 
 │   │   │   │   └── patch-replicas.yaml               # Adjust replica counts for staging validation
 │   │   │   │ 
 │   │   │   └── prod/                                 # Production environment
 │   │   │       ├── kustomization.yaml                # Extends base with production-ready configs
+│   │   │       ├── patch-configmap.yaml 
 │   │   │       ├── patch-resources.yaml              # Higher resource limits and stricter constraints
 │   │   │       ├── patch-hpa.yaml                    # Production autoscaling rules
 │   │   │       └── network-policies/                 # Enhanced security rules (restricted traffic)
+│   │   │           ├── egress-api.yaml
+│   │   │           ├── egress-financial.yaml
+│   │   │           └── ingress-strict.yaml 
 │   │   │     
 │   │   └── components/                               # Reusable Kustomize components (advanced DRY configuration)
 │   │       ├── kustomization.yaml                  
