@@ -446,11 +446,11 @@ Tkllm-darija/
 │   │           └── pod-security.yaml                 # PodSecurityPolicy / Pod Security Admission configuration (restricted, baseline, privileged)
 │   │
 │   ├── docker/                                       # Local development environment
-│   │   ├── docker-compose.yml                        # Main local stack (Postgres, Redis, MinIO, Kafka, MailHog, etc.)
+│   │   ├── docker-compose.yml                        # Main local stack (PostgreSQL, Redis, MinIO, Kafka, MailHog, pgAdmin, etc.)
 │   │   ├── .env                                      # Local environment variables
 │   │   ├── .env.example                              # Template for all environment variables
 │   │   │
-│   │   ├── init-scripts/                             # Scripts executed on container startup
+│   │   ├── init-scripts/                             # Initialization scripts executed automatically on container startup
 │   │   │   ├── postgres/
 │   │   │   │   └── 01_extensions.sql                 # Enables pg_trgm, uuid-ossp, pgcrypto, TimescaleDB, etc.
 │   │   │   │
@@ -460,7 +460,10 @@ Tkllm-darija/
 │   │   ├── minio/
 │   │   │   └── buckets.json                          # Auto-creates buckets on startup (tkllm-audio, tkllm-datasets, etc.)
 │   │   │
-│   │   └── nginx/                                    # Optional local reverse proxy / traefik config (if needed)
+│   │   └── nginx/                                    # Optional local reverse proxy configuration
+│   │       ├── nginx.conf                            # Main NGINX configuration file for local routing and SSL termination
+│   │       ├── docker-compose.nginx.yml              # Additional Docker Compose override file for NGINX service
+│   │       └── README.md                             # Instructions on how to enable and use the local NGINX proxy   
 │   │
 │   ├── monitoring/                                   # Observability stack configuration
 │   │   ├── prometheus/

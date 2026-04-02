@@ -1,0 +1,63 @@
+# =============================================================================
+# Docker Compose override — NGINX local reverse proxy
+#
+# Usage (merge with main stack):
+#   docker compose \
+#     -f infrastructure/docker/docker-compose.yml \
+#     -f infrastructure/docker/nginx/docker-compose.nginx.yml \
+#     up -d
+#
+# Or add a convenience script alias in package.json:
+#   "infra:up:nginx": "docker compose -f infrastructure/docker/docker-compose.yml -f infrastructure/docker/nginx/docker-compose.nginx.yml up -d"
+#
+# After starting, add these to your /etc/hosts (or C:\Windows\System32\drivers\etc\hosts):
+#   127.0.0.1  app.localhost
+#   127.0.0.1  b2b.localhost
+#   127.0.0.1  api.localhost
+#   127.0.0.1  mlflow.localhost
+#   127.0.0.1  prefect.localhost
+#   127.0.0.1  minio.localhost
+#   127.0.0.1  grafana.localhost
+#
+# Then access:
+#   http://app.localhost       → Contributor web app
+#   http://b2b.localhost       → B2B enterprise portal
+#   http://api.localhost/api/v1/health  → NestJS API health
+#   http://localhost/api/      → Same via path routing
+# =============================================================================
+
+name: tkllm-darija
+
+services:
+  nginx:
+    image: nginx:1.27-alpine
+    container_name: tkllm-nginx
+    restart: unless-stopped
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+    depends_on:
+      - api
+      - web-contributor
+      - web-b2b
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - nginx-logs:/var/log/nginx
+    ports:
+      - "80:80"
+    networks:
+      - tkllm-backend
+      - tkllm-ml
+      - tkllm-monitoring
+    healthcheck:
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost/nginx-health"]
+
+volumes:
+  nginx-logs:
+    name: tkllm-nginx-logs

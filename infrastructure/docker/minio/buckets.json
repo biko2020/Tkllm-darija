@@ -1,0 +1,172 @@
+{
+  "_comment": "=================================================================",
+  "_comment2": "MinIO bucket definitions for local dev stack.",
+  "_comment3": "These are applied automatically by the minio-init sidecar in",
+  "_comment4": "docker-compose.yml via 'mc mb' commands.",
+  "_comment5": "This file serves as the source of truth / documentation for:",
+  "_comment6": "  - Bucket names (must match S3_BUCKET_* vars in .env)",
+  "_comment7": "  - Access policies (public-read for audio, private for rest)",
+  "_comment8": "  - CORS rules (allow browser-direct audio uploads)",
+  "_comment9": "  - Lifecycle rules (auto-expire failed upload temp files)",
+  "_comment10": "For production, these are created by Terraform (modules/cloudflare/main.tf)",
+  "_comment11": "=================================================================",
+
+  "buckets": [
+    {
+      "name": "tkllm-audio",
+      "description": "Raw contributor voice recordings. Public-read so the web app can stream playback without signed URLs.",
+      "access": "public",
+      "versioning": false,
+      "lifecycle": {
+        "rules": [
+          {
+            "id": "expire-incomplete-multipart",
+            "status": "Enabled",
+            "filter": { "prefix": "uploads/tmp/" },
+            "abortIncompleteMultipartUpload": { "daysAfterInitiation": 2 }
+          },
+          {
+            "id": "expire-rejected-audio",
+            "status": "Enabled",
+            "filter": { "prefix": "rejected/" },
+            "expiration": { "days": 30 }
+          }
+        ]
+      },
+      "cors": {
+        "rules": [
+          {
+            "allowedOrigins": ["http://localhost:3002", "http://localhost:3003", "https://app.tkllm-darija.ma"],
+            "allowedMethods": ["GET", "PUT", "POST", "DELETE", "HEAD"],
+            "allowedHeaders": ["*"],
+            "exposeHeaders": ["ETag", "x-amz-request-id"],
+            "maxAgeSeconds": 3600
+          }
+        ]
+      },
+      "folders": [
+        "uploads/raw/",
+        "uploads/tmp/",
+        "processed/",
+        "rejected/"
+      ]
+    },
+
+    {
+      "name": "tkllm-datasets",
+      "description": "Processed, versioned, annotated datasets in Parquet / JSONL format. Private — B2B API access only.",
+      "access": "private",
+      "versioning": true,
+      "lifecycle": {
+        "rules": [
+          {
+            "id": "transition-old-versions",
+            "status": "Enabled",
+            "filter": { "prefix": "" },
+            "noncurrentVersionExpiration": { "noncurrentDays": 180 }
+          }
+        ]
+      },
+      "cors": {
+        "rules": []
+      },
+      "folders": [
+        "v1/speech-to-text/",
+        "v1/parallel-corpora/",
+        "v1/annotated/",
+        "v2/",
+        "exports/",
+        "dvc/"
+      ]
+    },
+
+    {
+      "name": "tkllm-exports",
+      "description": "On-demand B2B dataset export packages (ZIP/tar.gz). Private — pre-signed URLs issued per order.",
+      "access": "private",
+      "versioning": false,
+      "lifecycle": {
+        "rules": [
+          {
+            "id": "expire-exports",
+            "status": "Enabled",
+            "filter": { "prefix": "" },
+            "expiration": { "days": 7 },
+            "comment": "Export packages expire after 7 days — customer must re-download"
+          }
+        ]
+      },
+      "cors": {
+        "rules": []
+      },
+      "folders": [
+        "pending/",
+        "ready/",
+        "expired/"
+      ]
+    },
+
+    {
+      "name": "tkllm-models",
+      "description": "Trained model weights, MLflow artefacts, Whisper fine-tunes, wav2vec checkpoints.",
+      "access": "private",
+      "versioning": true,
+      "lifecycle": {
+        "rules": [
+          {
+            "id": "expire-draft-runs",
+            "status": "Enabled",
+            "filter": { "prefix": "mlflow/draft/" },
+            "expiration": { "days": 14 }
+          },
+          {
+            "id": "retain-prod-models",
+            "status": "Enabled",
+            "filter": { "prefix": "production/" },
+            "comment": "Production model versions are retained indefinitely"
+          }
+        ]
+      },
+      "cors": {
+        "rules": []
+      },
+      "folders": [
+        "mlflow/",
+        "mlflow/draft/",
+        "whisper/",
+        "wav2vec/",
+        "production/",
+        "checkpoints/"
+      ]
+    }
+  ],
+
+  "policies": {
+    "tkllm-audio-public-read": {
+      "bucket": "tkllm-audio",
+      "statement": {
+        "Effect": "Allow",
+        "Principal": { "AWS": ["*"] },
+        "Action": ["s3:GetObject"],
+        "Resource": ["arn:aws:s3:::tkllm-audio/processed/*"]
+      },
+      "comment": "Only processed/ prefix is public — raw uploads are private"
+    }
+  },
+
+  "local_dev_notes": {
+    "minio_console": "http://localhost:9001  (minioadmin / minioadmin)",
+    "s3_endpoint": "http://localhost:9000",
+    "access_key": "minioadmin",
+    "secret_key": "minioadmin",
+    "applied_by": "minio-init sidecar in docker-compose.yml",
+    "mc_commands": [
+      "mc alias set local http://localhost:9000 minioadmin minioadmin",
+      "mc mb local/tkllm-audio",
+      "mc mb local/tkllm-datasets",
+      "mc mb local/tkllm-exports",
+      "mc mb local/tkllm-models",
+      "mc anonymous set download local/tkllm-audio/processed"
+    ]
+  }
+}
