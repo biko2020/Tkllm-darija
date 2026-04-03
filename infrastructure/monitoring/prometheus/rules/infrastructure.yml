@@ -1,0 +1,232 @@
+# =============================================================================
+# Alerting Rules — Infrastructure (Postgres, Redis, Kafka, MinIO, Weaviate)
+# =============================================================================
+groups:
+
+  # ── PostgreSQL ─────────────────────────────────────────────────────────────
+  - name: tkllm.postgres
+    interval: 30s
+    rules:
+
+      - alert: PostgresDown
+        expr: up{service="postgres"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          service:  postgres
+        annotations:
+          summary:     "PostgreSQL is down"
+          description: "PostgreSQL exporter target is unreachable."
+
+      - alert: PostgresHighConnections
+        expr: |
+          pg_stat_activity_count{state!="idle"} > 150
+        for: 5m
+        labels:
+          severity: warning
+          service:  postgres
+        annotations:
+          summary:     "PostgreSQL active connections above 150"
+          description: "{{ $value }} non-idle connections — max is 200. Risk of connection exhaustion."
+
+      - alert: PostgresConnectionsExhausted
+        expr: |
+          pg_stat_activity_count > 190
+        for: 2m
+        labels:
+          severity: critical
+          service:  postgres
+        annotations:
+          summary:     "PostgreSQL connections near limit"
+          description: "{{ $value }} connections — approaching max_connections=200."
+
+      - alert: PostgresSlowQueries
+        expr: |
+          rate(pg_stat_statements_total_time[5m]) / rate(pg_stat_statements_calls[5m]) > 5000
+        for: 10m
+        labels:
+          severity: warning
+          service:  postgres
+        annotations:
+          summary:     "PostgreSQL slow queries detected"
+          description: "Average query time is {{ $value | humanize }}ms. Review EXPLAIN ANALYZE."
+
+      - alert: PostgresReplicationLag
+        expr: |
+          pg_replication_lag > 30
+        for: 5m
+        labels:
+          severity: critical
+          service:  postgres
+        annotations:
+          summary:     "PostgreSQL replication lag above 30s"
+          description: "Replication lag is {{ $value | humanizeDuration }}."
+
+      - alert: PostgresStorageUsageHigh
+        expr: |
+          pg_database_size_bytes{datname="tkllm_darija"} > 80 * 1024 * 1024 * 1024
+        for: 30m
+        labels:
+          severity: warning
+          service:  postgres
+        annotations:
+          summary:     "PostgreSQL database size above 80GB"
+          description: "Database is {{ $value | humanize1024 }}B."
+
+  # ── Redis ──────────────────────────────────────────────────────────────────
+  - name: tkllm.redis
+    interval: 15s
+    rules:
+
+      - alert: RedisDown
+        expr: up{service="redis"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          service:  redis
+        annotations:
+          summary:     "Redis is down"
+          description: "Redis target {{ $labels.instance }} is unreachable."
+
+      - alert: RedisHighMemoryUsage
+        expr: |
+          redis_memory_used_bytes / redis_memory_max_bytes > 0.85
+        for: 5m
+        labels:
+          severity: warning
+          service:  redis
+        annotations:
+          summary:     "Redis memory usage above 85%"
+          description: "Redis is using {{ $value | humanizePercentage }} of maxmemory."
+
+      - alert: RedisMemoryFull
+        expr: |
+          redis_memory_used_bytes / redis_memory_max_bytes > 0.95
+        for: 2m
+        labels:
+          severity: critical
+          service:  redis
+        annotations:
+          summary:     "Redis memory above 95% — eviction risk"
+          description: "Redis eviction policy allkeys-lru will start dropping keys."
+
+      - alert: RedisHighCommandLatency
+        expr: |
+          redis_commands_duration_seconds_total / redis_commands_total > 0.01
+        for: 5m
+        labels:
+          severity: warning
+          service:  redis
+        annotations:
+          summary:     "Redis average command latency above 10ms"
+          description: "Average latency is {{ $value | humanize }}s."
+
+      - alert: RedisBullMQQueueBacklog
+        expr: |
+          redis_db_keys{db="db1"} > 10000
+        for: 10m
+        labels:
+          severity: warning
+          service:  redis
+        annotations:
+          summary:     "BullMQ queue backlog above 10k jobs"
+          description: "{{ $value }} keys in BullMQ DB. Workers may be struggling."
+
+  # ── Kafka ──────────────────────────────────────────────────────────────────
+  - name: tkllm.kafka
+    interval: 15s
+    rules:
+
+      - alert: KafkaDown
+        expr: up{service="kafka"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          service:  kafka
+        annotations:
+          summary:     "Kafka broker is down"
+          description: "Kafka exporter target is unreachable."
+
+      - alert: KafkaConsumerGroupLagHigh
+        expr: |
+          kafka_consumergroup_lag_sum{topic="transcription.requested"} > 100
+        for: 5m
+        labels:
+          severity: warning
+          service:  kafka
+          topic:    transcription.requested
+        annotations:
+          summary:     "Kafka transcription queue lag above 100"
+          description: "Consumer group lag is {{ $value }} messages. ASR workers may be overwhelmed."
+
+      - alert: KafkaConsumerGroupLagCritical
+        expr: |
+          kafka_consumergroup_lag_sum{topic="transcription.requested"} > 500
+        for: 5m
+        labels:
+          severity: critical
+          service:  kafka
+          topic:    transcription.requested
+        annotations:
+          summary:     "Kafka transcription queue lag above 500"
+          description: "{{ $value }} messages queued — audio processing severely delayed."
+
+      - alert: KafkaPaymentLagHigh
+        expr: |
+          kafka_consumergroup_lag_sum{topic="payment.processed"} > 50
+        for: 5m
+        labels:
+          severity: critical
+          service:  kafka
+          topic:    payment.processed
+        annotations:
+          summary:     "Kafka payment queue lag above 50"
+          description: "{{ $value }} payment events pending — contributor payouts may be delayed."
+
+      - alert: KafkaUnderReplicatedPartitions
+        expr: |
+          kafka_server_replicamanager_underreplicatedpartitions > 0
+        for: 5m
+        labels:
+          severity: warning
+          service:  kafka
+        annotations:
+          summary:     "Kafka has under-replicated partitions"
+          description: "{{ $value }} under-replicated partitions detected."
+
+  # ── MinIO ──────────────────────────────────────────────────────────────────
+  - name: tkllm.minio
+    interval: 30s
+    rules:
+
+      - alert: MinioDown
+        expr: up{service="minio"} == 0
+        for: 2m
+        labels:
+          severity: critical
+          service:  minio
+        annotations:
+          summary:     "MinIO is down"
+          description: "MinIO object storage is unreachable. Audio uploads will fail."
+
+      - alert: MinioStorageUsageHigh
+        expr: |
+          minio_cluster_capacity_usable_free_bytes / minio_cluster_capacity_usable_total_bytes < 0.20
+        for: 30m
+        labels:
+          severity: warning
+          service:  minio
+        annotations:
+          summary:     "MinIO free storage below 20%"
+          description: "Only {{ $value | humanizePercentage }} of usable storage remains."
+
+      - alert: MinioHighErrorRate
+        expr: |
+          rate(minio_s3_requests_errors_total[5m]) > 10
+        for: 5m
+        labels:
+          severity: warning
+          service:  minio
+        annotations:
+          summary:     "MinIO S3 error rate above 10/s"
+          description: "{{ $value }} S3 errors/s. Audio upload failures likely."

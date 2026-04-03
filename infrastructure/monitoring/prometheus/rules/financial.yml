@@ -1,0 +1,151 @@
+# =============================================================================
+# Alerting Rules — Financial Service (Payments, Wallet, Fraud)
+# These are the most critical alerts in the system — paging priority.
+# =============================================================================
+groups:
+
+  - name: tkllm.financial
+    interval: 10s    # highest evaluation frequency — payments are latency-critical
+    rules:
+
+      # ── Service Health ──────────────────────────────────────────────────────
+      - alert: FinancialServiceDown
+        expr: up{service="financial-service"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          service:  financial-service
+          page:     "true"
+        annotations:
+          summary:     "Financial service is DOWN"
+          description: "Contributor payment processing is unavailable. Immediate action required."
+
+      # ── Payment Processing ──────────────────────────────────────────────────
+      - alert: PaymentFailureRateHigh
+        expr: |
+          (
+            rate(payment_transactions_failed_total[5m])
+            /
+            rate(payment_transactions_total[5m])
+          ) > 0.05
+        for: 3m
+        labels:
+          severity: critical
+          service:  financial-service
+          page:     "true"
+        annotations:
+          summary:     "Payment failure rate above 5%"
+          description: "{{ $value | humanizePercentage }} of payment transactions are failing. Check gateway connectivity."
+
+      - alert: PaymentFailureRateElevated
+        expr: |
+          (
+            rate(payment_transactions_failed_total[10m])
+            /
+            rate(payment_transactions_total[10m])
+          ) > 0.02
+        for: 5m
+        labels:
+          severity: warning
+          service:  financial-service
+        annotations:
+          summary:     "Payment failure rate above 2%"
+          description: "{{ $value | humanizePercentage }} of payment transactions failing."
+
+      - alert: PaymentGatewayLatencyHigh
+        expr: |
+          histogram_quantile(0.95,
+            rate(payment_gateway_request_duration_seconds_bucket[5m])
+          ) > 10
+        for: 5m
+        labels:
+          severity: warning
+          service:  financial-service
+        annotations:
+          summary:     "Payment gateway P95 latency above 10s"
+          description: "Payment gateway P95 response time is {{ $value | humanizeDuration }}."
+
+      # ── Payout Queue ────────────────────────────────────────────────────────
+      - alert: PayoutQueueBacklog
+        expr: |
+          kafka_consumergroup_lag_sum{topic="payment.processed"} > 100
+        for: 10m
+        labels:
+          severity: critical
+          service:  financial-service
+          page:     "true"
+        annotations:
+          summary:     "Payout queue backlog above 100"
+          description: "{{ $value }} payment events pending. Contributor payouts are delayed."
+
+      - alert: RewardIssuanceStalled
+        expr: |
+          kafka_consumergroup_lag_sum{topic="reward.issued"} > 50
+          and
+          rate(payment_payouts_processed_total[30m]) == 0
+        for: 15m
+        labels:
+          severity: critical
+          service:  financial-service
+        annotations:
+          summary:     "Reward issuance stalled — queue backed up, no payouts processing"
+          description: "{{ $value }} reward events queued with 0 payouts processed in 30m."
+
+      # ── Fraud Detection ─────────────────────────────────────────────────────
+      - alert: FraudAlertsHigh
+        expr: |
+          rate(fraud_detection_alerts_total[1h]) > 10
+        for: 5m
+        labels:
+          severity: warning
+          service:  financial-service
+        annotations:
+          summary:     "Fraud detection alerts above 10/h"
+          description: "{{ $value }} fraud alerts per hour. Review fraud rules and contributor accounts."
+
+      - alert: FraudAlertsCritical
+        expr: |
+          rate(fraud_detection_alerts_total[15m]) > 20
+        for: 5m
+        labels:
+          severity: critical
+          service:  financial-service
+          page:     "true"
+        annotations:
+          summary:     "Fraud spike detected — 20+ alerts in 15 minutes"
+          description: "Possible coordinated fraud attempt. Investigate immediately."
+
+      # ── Wallet Balance ──────────────────────────────────────────────────────
+      - alert: PlatformWalletBalanceLow
+        expr: |
+          platform_wallet_balance_mad < 10000
+        for: 30m
+        labels:
+          severity: critical
+          service:  financial-service
+          page:     "true"
+        annotations:
+          summary:     "Platform wallet balance below 10,000 MAD"
+          description: "Balance is {{ $value }} MAD. Top up required to continue contributor payouts."
+
+      - alert: CMIGatewayDown
+        expr: |
+          payment_gateway_up{provider="cmi"} == 0
+        for: 2m
+        labels:
+          severity: critical
+          service:  financial-service
+        annotations:
+          summary:     "CMI payment gateway is unreachable"
+          description: "Card payments via CMI are failing. Fallback to alternative gateways."
+
+      - alert: OrangeMoneyGatewayDown
+        expr: |
+          payment_gateway_up{provider="orange-money"} == 0
+        for: 2m
+        labels:
+          severity: critical
+          service:  financial-service
+        annotations:
+          summary:     "Orange Money gateway is unreachable"
+          description: "Orange Money payouts unavailable. Contributors may experience delays."

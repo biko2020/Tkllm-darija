@@ -1,0 +1,174 @@
+# =============================================================================
+# Alerting Rules — SLO / SLA Burn Rate
+#
+# Multi-window burn rate alerting (Google SRE Book approach).
+# Fires fast for high burn rates, slower for sustained low burn rates.
+#
+# SLO definitions:
+#   API Availability:    99.5% (allows ~3.6h downtime/month)
+#   API Latency P95:     95% of requests < 1s
+#   Payment Success:     99.9% (allows ~43min downtime/month)
+#   Transcription:       95% success rate
+#   Data Export:         99% delivery within 24h
+# =============================================================================
+groups:
+
+  - name: tkllm.slo.api-availability
+    interval: 30s
+    rules:
+
+      # Record base availability ratio (last 5m)
+      - record: tkllm:api_availability:ratio_rate5m
+        expr: |
+          1 - (
+            sum(rate(http_requests_total{service="api", status=~"5.."}[5m]))
+            /
+            sum(rate(http_requests_total{service="api"}[5m]))
+          )
+
+      - record: tkllm:api_availability:ratio_rate1h
+        expr: |
+          1 - (
+            sum(rate(http_requests_total{service="api", status=~"5.."}[1h]))
+            /
+            sum(rate(http_requests_total{service="api"}[1h]))
+          )
+
+      # Fast burn — page immediately (14.4× budget burn in 1h)
+      - alert: ApiSLOFastBurn
+        expr: |
+          tkllm:api_availability:ratio_rate5m < (1 - 14.4 * (1 - 0.995))
+          and
+          tkllm:api_availability:ratio_rate1h < (1 - 14.4 * (1 - 0.995))
+        for: 2m
+        labels:
+          severity:  critical
+          service:   api
+          slo:       availability
+          burn_rate: fast
+          page:      "true"
+        annotations:
+          summary:     "API SLO fast burn — availability critically low"
+          description: "API availability is {{ $value | humanizePercentage }} (SLO: 99.5%). Burning error budget 14.4× faster than allowed."
+
+      # Slow burn — alert but do not page (1× budget burn in 6h)
+      - alert: ApiSLOSlowBurn
+        expr: |
+          tkllm:api_availability:ratio_rate1h < (1 - 1 * (1 - 0.995))
+        for: 60m
+        labels:
+          severity:  warning
+          service:   api
+          slo:       availability
+          burn_rate: slow
+        annotations:
+          summary:     "API SLO slow burn — availability degraded"
+          description: "API availability is {{ $value | humanizePercentage }} over the last hour (SLO: 99.5%)."
+
+  - name: tkllm.slo.api-latency
+    interval: 30s
+    rules:
+
+      - record: tkllm:api_latency_p95:ratio_rate5m
+        expr: |
+          histogram_quantile(0.95,
+            sum(rate(http_request_duration_seconds_bucket{service="api"}[5m])) by (le)
+          )
+
+      - alert: ApiLatencySLOBreach
+        expr: |
+          tkllm:api_latency_p95:ratio_rate5m > 1.0
+        for: 10m
+        labels:
+          severity: warning
+          service:  api
+          slo:      latency
+        annotations:
+          summary:     "API latency SLO breach — P95 above 1s"
+          description: "API P95 latency is {{ $value | humanizeDuration }} (SLO: < 1s)."
+
+  - name: tkllm.slo.payment-success
+    interval: 10s
+    rules:
+
+      - record: tkllm:payment_success:ratio_rate5m
+        expr: |
+          1 - (
+            rate(payment_transactions_failed_total[5m])
+            /
+            rate(payment_transactions_total[5m])
+          )
+
+      - record: tkllm:payment_success:ratio_rate1h
+        expr: |
+          1 - (
+            rate(payment_transactions_failed_total[1h])
+            /
+            rate(payment_transactions_total[1h])
+          )
+
+      # Payment SLO: 99.9% success — much tighter than API
+      - alert: PaymentSLOFastBurn
+        expr: |
+          tkllm:payment_success:ratio_rate5m < (1 - 14.4 * (1 - 0.999))
+          and
+          tkllm:payment_success:ratio_rate1h < (1 - 14.4 * (1 - 0.999))
+        for: 2m
+        labels:
+          severity:  critical
+          service:   financial-service
+          slo:       payment-success
+          burn_rate: fast
+          page:      "true"
+        annotations:
+          summary:     "Payment SLO fast burn — success rate critically low"
+          description: "Payment success rate is {{ $value | humanizePercentage }} (SLO: 99.9%)."
+
+  - name: tkllm.slo.transcription
+    interval: 30s
+    rules:
+
+      - record: tkllm:transcription_success:ratio_rate1h
+        expr: |
+          1 - (
+            rate(asr_transcriptions_failed_total[1h])
+            /
+            rate(asr_transcriptions_total[1h])
+          )
+
+      - alert: TranscriptionSLOBreach
+        expr: |
+          tkllm:transcription_success:ratio_rate1h < 0.95
+        for: 30m
+        labels:
+          severity: warning
+          service:  asr-worker
+          slo:      transcription-success
+        annotations:
+          summary:     "Transcription success rate below 95% SLO"
+          description: "Transcription success rate is {{ $value | humanizePercentage }} over last hour."
+
+  - name: tkllm.slo.contributor-experience
+    interval: 60s
+    rules:
+
+      # Contributor app availability
+      - record: tkllm:contributor_app_availability:ratio_rate5m
+        expr: |
+          1 - (
+            sum(rate(http_requests_total{service="web-contributor", status=~"5.."}[5m]))
+            /
+            sum(rate(http_requests_total{service="web-contributor"}[5m]))
+          )
+
+      - alert: ContributorAppSLOBreach
+        expr: |
+          tkllm:contributor_app_availability:ratio_rate5m < 0.99
+        for: 5m
+        labels:
+          severity: critical
+          service:  web-contributor
+          slo:      availability
+        annotations:
+          summary:     "Contributor app availability below 99%"
+          description: "Contributor app availability is {{ $value | humanizePercentage }}. Data collection impacted."

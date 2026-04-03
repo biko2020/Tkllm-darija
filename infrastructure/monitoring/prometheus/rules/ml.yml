@@ -1,0 +1,138 @@
+# =============================================================================
+# Alerting Rules — ML Stack (ASR Worker, Quality Engine, Data Pipeline)
+# =============================================================================
+groups:
+
+  - name: tkllm.ml
+    interval: 30s
+    rules:
+
+      # ── ASR Worker ──────────────────────────────────────────────────────────
+      - alert: AsrWorkerDown
+        expr: up{service="asr-worker"} == 0
+        for: 5m
+        labels:
+          severity: warning
+          service:  asr-worker
+        annotations:
+          summary:     "ASR worker is down"
+          description: "No ASR worker metrics available. Transcription pipeline stalled."
+
+      - alert: AsrTranscriptionFailureRateHigh
+        expr: |
+          (
+            rate(asr_transcriptions_failed_total[10m])
+            /
+            rate(asr_transcriptions_total[10m])
+          ) > 0.10
+        for: 10m
+        labels:
+          severity: critical
+          service:  asr-worker
+        annotations:
+          summary:     "ASR transcription failure rate above 10%"
+          description: "{{ $value | humanizePercentage }} of transcriptions are failing."
+
+      - alert: AsrTranscriptionLatencyHigh
+        expr: |
+          histogram_quantile(0.95,
+            rate(asr_transcription_duration_seconds_bucket[10m])
+          ) > 120
+        for: 10m
+        labels:
+          severity: warning
+          service:  asr-worker
+        annotations:
+          summary:     "ASR P95 transcription time above 120s"
+          description: "P95 transcription is taking {{ $value | humanizeDuration }}."
+
+      - alert: AsrGpuMemoryHigh
+        expr: |
+          nvidia_gpu_memory_used_bytes / nvidia_gpu_memory_total_bytes > 0.90
+        for: 5m
+        labels:
+          severity: warning
+          service:  asr-worker
+        annotations:
+          summary:     "GPU memory above 90%"
+          description: "GPU {{ $labels.gpu }} memory usage is {{ $value | humanizePercentage }}. OOM risk."
+
+      - alert: AsrQueueNotDraining
+        expr: |
+          kafka_consumergroup_lag_sum{topic="transcription.requested",
+            consumergroup="asr-worker-group"} > 0
+          and
+          rate(asr_transcriptions_total[10m]) == 0
+        for: 15m
+        labels:
+          severity: critical
+          service:  asr-worker
+        annotations:
+          summary:     "ASR queue has messages but worker is not consuming"
+          description: "{{ $value }} messages pending and transcription rate is 0. Worker may be crashed."
+
+      # ── Quality Engine ──────────────────────────────────────────────────────
+      - alert: QualityEngineDown
+        expr: up{service="quality-engine"} == 0
+        for: 5m
+        labels:
+          severity: warning
+          service:  quality-engine
+        annotations:
+          summary:     "Quality Engine is down"
+          description: "Quality scoring pipeline unavailable. Annotations will not be validated."
+
+      - alert: QualityReviewBacklogHigh
+        expr: |
+          kafka_consumergroup_lag_sum{topic="quality.review.requested"} > 200
+        for: 15m
+        labels:
+          severity: warning
+          service:  quality-engine
+        annotations:
+          summary:     "Quality review backlog above 200 tasks"
+          description: "{{ $value }} tasks awaiting quality review."
+
+      - alert: QualityScoreLow
+        expr: |
+          avg_over_time(quality_annotation_score_avg[1h]) < 0.60
+        for: 30m
+        labels:
+          severity: warning
+          service:  quality-engine
+        annotations:
+          summary:     "Average annotation quality score dropped below 0.60"
+          description: "1-hour rolling average quality score is {{ $value }}. Review contributor calibration."
+
+      # ── Data Pipeline ───────────────────────────────────────────────────────
+      - alert: DataPipelineDown
+        expr: up{service="data-pipeline"} == 0
+        for: 10m
+        labels:
+          severity: warning
+          service:  data-pipeline
+        annotations:
+          summary:     "Data pipeline is down"
+          description: "ETL pipeline unavailable. Dataset exports may be delayed."
+
+      - alert: DataPipelineFlowFailure
+        expr: |
+          rate(prefect_flow_run_failed_total[1h]) > 3
+        for: 5m
+        labels:
+          severity: critical
+          service:  data-pipeline
+        annotations:
+          summary:     "Data pipeline flow failure rate above 3/h"
+          description: "{{ $value }} Prefect flow failures in the last hour."
+
+      - alert: DataExportQueueBacklog
+        expr: |
+          kafka_consumergroup_lag_sum{topic="export.requested"} > 20
+        for: 30m
+        labels:
+          severity: warning
+          service:  data-pipeline
+        annotations:
+          summary:     "Dataset export queue backlog above 20"
+          description: "{{ $value }} export requests pending. B2B customers may be waiting."
