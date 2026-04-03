@@ -465,17 +465,30 @@ Tkllm-darija/
 │   │       ├── docker-compose.nginx.yml              # Additional Docker Compose override file for NGINX service
 │   │       └── README.md                             # Instructions on how to enable and use the local NGINX proxy   
 │   │
-│   ├── monitoring/                                   # Observability stack configuration
+│   ├── monitoring/                                   # Observability stack configuration (Prometheus + Grafana)
 │   │   ├── prometheus/
-│   │   │   └── prometheus.yml                        # Scraping configuration for all services
+│   │   │   ├── prometheus.yml                        # Scraping configuration for all services
+│   │   │   │
+│   │   │   └── rules/                                # Prometheus alerting and recording rules
+│   │   │       ├── api.yml                           # Alerting rules for the main NestJS API (error rates, latency, request volume, etc.)
+│   │   │       ├── infrastructure.yml                # Rules for core infrastructure (Postgres, Redis, Kafka, MinIO health & performance)
+│   │   │       ├── ml.yml                            # Rules for ML/ASR worker (transcription queue depth, model inference latency, GPU utilization)
+│   │   │       ├── financial.yml                     # Rules for financial service (payment success rate, payout failures, fraud detection alerts)
+│   │   │       └── slo.yml                           # Service Level Objective (SLO) rules and burn rate calculations for reliability monitoring
 │   │   │
 │   │   └── grafana/
-│   │       └── provisioning/
-│   │           ├── datasources/
-│   │           │   └── prometheus.yml                # Auto-connects Grafana to Prometheus
-│   │           │
-│   │           └── dashboards/
-│   │               └── default.yml                   # Preloaded dashboards for API, ASR, quality, etc.
+│   │       ├── provisioning/                         # Auto-provisioning configuration (applied on Grafana startup)
+│   │       │   ├── datasources/
+│   │       │   │   └── prometheus.yml                # Data source configuration that automatically connects Grafana to Prometheus
+│   │       │   │
+│   │       │   └── dashboards/
+│   │       │       └── default.yml                   # Dashboard provisioning manifest - defines which dashboards to load automatically
+│   │       │
+│   │       └── dashboards/                           # Actual Grafana dashboard definitions (JSON files)
+│   │           ├── api-overview.json                 # Main dashboard for NestJS API metrics (requests, latency, errors, throughput)
+│   │           ├── infrastructure.json               # Infrastructure overview (PostgreSQL, Redis, Kafka, MinIO health and performance)
+│   │           ├── ml-pipeline.json                  # ML & ASR pipeline dashboard (transcription jobs, GPU usage, model latency, queue depth)
+│   │           └── business.json                     # Business & financial metrics (contributor activity, payouts, data quality, growth KPIs)
 │   │
 │   ├── messaging/                                    # Async communication & event-driven setup
 │   │   ├── kafka/

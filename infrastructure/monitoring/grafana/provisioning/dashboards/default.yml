@@ -1,0 +1,18 @@
+apiVersion: 1
+
+providers:
+  - name: tkllm-darija
+    orgId: 1
+    type: file
+    disableDeletion: false
+    updateIntervalSeconds: 30
+    allowUiUpdates: true
+    options:
+      path: /var/lib/grafana/dashboards
+      foldersFromFilesStructure: false
+
+  # Dashboard folder labels
+  # api-overview.json   → API monitoring
+  # infrastructure.json → Infrastructure (DB, Cache, Messaging)
+  # ml-pipeline.json    → ML & Data Pipeline
+  # business.json       → Business KPIs & SLOs

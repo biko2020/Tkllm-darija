@@ -1,0 +1,223 @@
+{
+  "__comment": "Tkllm-darija — Business KPIs Dashboard",
+  "id": null,
+  "uid": "tkllm-business",
+  "title": "Tkllm Business KPIs",
+  "tags": ["tkllm", "business", "contributors", "payments"],
+  "timezone": "Africa/Casablanca",
+  "schemaVersion": 39,
+  "refresh": "1m",
+  "time": { "from": "now-24h", "to": "now" },
+  "panels": [
+    {
+      "id": 1,
+      "title": "Audio Submissions (last 24h)",
+      "type": "stat",
+      "gridPos": { "x": 0, "y": 0, "w": 6, "h": 4 },
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "targets": [
+        {
+          "expr": "increase(kafka_topic_partition_current_offset{topic=\"audio.uploaded\"}[24h])",
+          "legendFormat": "Submissions"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "color": { "mode": "thresholds" },
+          "thresholds": {
+            "steps": [
+              { "color": "red", "value": null },
+              { "color": "yellow", "value": 100 },
+              { "color": "green", "value": 500 }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": 2,
+      "title": "Transcriptions Completed (last 24h)",
+      "type": "stat",
+      "gridPos": { "x": 6, "y": 0, "w": 6, "h": 4 },
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "targets": [
+        {
+          "expr": "increase(asr_transcriptions_total[24h])",
+          "legendFormat": "Transcriptions"
+        }
+      ],
+      "fieldConfig": { "defaults": { "unit": "short" } }
+    },
+    {
+      "id": 3,
+      "title": "Annotations Reviewed (last 24h)",
+      "type": "stat",
+      "gridPos": { "x": 12, "y": 0, "w": 6, "h": 4 },
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "targets": [
+        {
+          "expr": "increase(quality_annotations_reviewed_total[24h])",
+          "legendFormat": "Reviewed"
+        }
+      ],
+      "fieldConfig": { "defaults": { "unit": "short" } }
+    },
+    {
+      "id": 4,
+      "title": "Payouts Processed (last 24h)",
+      "type": "stat",
+      "gridPos": { "x": 18, "y": 0, "w": 6, "h": 4 },
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "targets": [
+        {
+          "expr": "increase(payment_payouts_processed_total[24h])",
+          "legendFormat": "Payouts"
+        }
+      ],
+      "fieldConfig": { "defaults": { "unit": "short" } }
+    },
+    {
+      "id": 5,
+      "title": "Audio Submissions Rate (hourly trend)",
+      "type": "timeseries",
+      "gridPos": { "x": 0, "y": 4, "w": 12, "h": 8 },
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "targets": [
+        {
+          "expr": "rate(kafka_topic_partition_current_offset{topic=\"audio.uploaded\"}[1h]) * 3600",
+          "legendFormat": "Submissions/hour"
+        }
+      ],
+      "fieldConfig": { "defaults": { "unit": "short" } }
+    },
+    {
+      "id": 6,
+      "title": "Payment Success Rate (last 6h)",
+      "type": "timeseries",
+      "gridPos": { "x": 12, "y": 4, "w": 12, "h": 8 },
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "targets": [
+        {
+          "expr": "(1 - rate(payment_transactions_failed_total[30m]) / rate(payment_transactions_total[30m])) * 100",
+          "legendFormat": "Success Rate %"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "thresholds": {
+            "steps": [
+              { "color": "red", "value": null },
+              { "color": "yellow", "value": 95 },
+              { "color": "green", "value": 99 }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": 7,
+      "title": "Payout Volume by Gateway (MAD)",
+      "type": "piechart",
+      "gridPos": { "x": 0, "y": 12, "w": 8, "h": 8 },
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "targets": [
+        {
+          "expr": "increase(payment_payout_amount_mad_total[24h])",
+          "legendFormat": "{{provider}}"
+        }
+      ],
+      "fieldConfig": { "defaults": { "unit": "currencyMAD" } }
+    },
+    {
+      "id": 8,
+      "title": "Annotation Quality Score (rolling 1h avg)",
+      "type": "timeseries",
+      "gridPos": { "x": 8, "y": 12, "w": 8, "h": 8 },
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "targets": [
+        {
+          "expr": "avg_over_time(quality_annotation_score_avg[1h])",
+          "legendFormat": "Avg Quality Score"
+        },
+        {
+          "expr": "0.75",
+          "legendFormat": "Min Threshold"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percentunit",
+          "min": 0, "max": 1
+        }
+      }
+    },
+    {
+      "id": 9,
+      "title": "Fraud Alerts (last 24h)",
+      "type": "timeseries",
+      "gridPos": { "x": 16, "y": 12, "w": 8, "h": 8 },
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "targets": [
+        {
+          "expr": "increase(fraud_detection_alerts_total[1h])",
+          "legendFormat": "Fraud Alerts/hour"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "thresholds": {
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "yellow", "value": 5 },
+              { "color": "red", "value": 20 }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": 10,
+      "title": "SLO Status Summary",
+      "type": "table",
+      "gridPos": { "x": 0, "y": 20, "w": 24, "h": 6 },
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "targets": [
+        {
+          "expr": "tkllm:api_availability:ratio_rate1h * 100",
+          "legendFormat": "API Availability (SLO: 99.5%)",
+          "instant": true
+        },
+        {
+          "expr": "tkllm:payment_success:ratio_rate1h * 100",
+          "legendFormat": "Payment Success (SLO: 99.9%)",
+          "instant": true
+        },
+        {
+          "expr": "tkllm:transcription_success:ratio_rate1h * 100",
+          "legendFormat": "Transcription Success (SLO: 95%)",
+          "instant": true
+        },
+        {
+          "expr": "tkllm:contributor_app_availability:ratio_rate5m * 100",
+          "legendFormat": "Contributor App (SLO: 99%)",
+          "instant": true
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "thresholds": {
+            "steps": [
+              { "color": "red", "value": null },
+              { "color": "yellow", "value": 95 },
+              { "color": "green", "value": 99 }
+            ]
+          }
+        }
+      }
+    }
+  ]
+}
