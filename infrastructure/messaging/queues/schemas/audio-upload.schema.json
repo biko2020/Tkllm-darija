@@ -1,0 +1,230 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://tkllm-darija.ma/schemas/messaging/audio-upload.schema.json",
+  "title": "AudioUploadEvent",
+  "description": "Emitted on Kafka topic 'audio.uploaded' when a contributor successfully uploads a voice recording. Also used as the BullMQ job payload for the audio-processing queue.",
+  "type": "object",
+  "required": [
+    "eventId",
+    "eventType",
+    "version",
+    "timestamp",
+    "audioId",
+    "contributorId",
+    "taskId",
+    "storage"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "eventId": {
+      "type": "string",
+      "format": "uuid",
+      "description": "Unique event identifier (UUID v4). Used for deduplication."
+    },
+    "eventType": {
+      "type": "string",
+      "const": "audio.uploaded",
+      "description": "Event type discriminator."
+    },
+    "version": {
+      "type": "string",
+      "enum": ["1.0", "1.1"],
+      "description": "Schema version for forward compatibility."
+    },
+    "timestamp": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO 8601 UTC timestamp when the upload completed."
+    },
+    "audioId": {
+      "type": "string",
+      "format": "uuid",
+      "description": "Unique identifier for this audio recording in the database."
+    },
+    "contributorId": {
+      "type": "string",
+      "format": "uuid",
+      "description": "ID of the contributor who made the recording."
+    },
+    "taskId": {
+      "type": "string",
+      "format": "uuid",
+      "description": "ID of the task prompt this recording fulfills."
+    },
+    "storage": {
+      "type": "object",
+      "required": ["bucket", "key", "sizeBytes", "mimeType"],
+      "additionalProperties": false,
+      "properties": {
+        "bucket": {
+          "type": "string",
+          "enum": ["tkllm-audio", "tkllm-audio-dev", "tkllm-audio-staging"],
+          "description": "S3/R2 bucket name."
+        },
+        "key": {
+          "type": "string",
+          "pattern": "^uploads/raw/[a-f0-9-]+\\.(webm|mp4|ogg|wav|m4a|flac)$",
+          "description": "Object key in the bucket.",
+          "example": "uploads/raw/550e8400-e29b-41d4-a716-446655440000.webm"
+        },
+        "sizeBytes": {
+          "type": "integer",
+          "minimum": 1024,
+          "maximum": 52428800,
+          "description": "Audio file size in bytes (1KB–50MB)."
+        },
+        "mimeType": {
+          "type": "string",
+          "enum": ["audio/webm", "audio/mp4", "audio/ogg", "audio/wav", "audio/x-m4a", "audio/flac"],
+          "description": "MIME type of the uploaded audio."
+        },
+        "checksumSha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$",
+          "description": "SHA-256 checksum for integrity verification."
+        }
+      }
+    },
+    "audio": {
+      "type": "object",
+      "description": "Audio properties extracted by the client before upload.",
+      "additionalProperties": false,
+      "properties": {
+        "durationSeconds": {
+          "type": "number",
+          "minimum": 1,
+          "maximum": 300,
+          "description": "Recording duration in seconds."
+        },
+        "sampleRate": {
+          "type": "integer",
+          "enum": [8000, 16000, 22050, 44100, 48000],
+          "description": "Audio sample rate in Hz."
+        },
+        "channels": {
+          "type": "integer",
+          "enum": [1, 2],
+          "description": "Number of audio channels (1=mono, 2=stereo)."
+        },
+        "deviceType": {
+          "type": "string",
+          "enum": ["mobile", "tablet", "desktop", "unknown"],
+          "description": "Device type used for recording."
+        }
+      }
+    },
+    "contributor": {
+      "type": "object",
+      "description": "Demographic metadata collected with explicit consent.",
+      "additionalProperties": false,
+      "properties": {
+        "region": {
+          "type": "string",
+          "description": "Moroccan region (e.g. 'casablanca-settat', 'marrakech-safi')."
+        },
+        "ageGroup": {
+          "type": "string",
+          "enum": ["18-24", "25-34", "35-44", "45-54", "55-64", "65+", "prefer-not-to-say"]
+        },
+        "gender": {
+          "type": "string",
+          "enum": ["male", "female", "non-binary", "prefer-not-to-say"]
+        },
+        "nativeDialect": {
+          "type": "string",
+          "description": "Self-reported Darija dialect variant (e.g. 'casablanci', 'marrakchi', 'fassi')."
+        },
+        "firstLanguage": {
+          "type": "string",
+          "description": "Contributor's first language (e.g. 'darija', 'tamazight', 'french')."
+        }
+      }
+    },
+    "task": {
+      "type": "object",
+      "description": "Task prompt metadata.",
+      "additionalProperties": false,
+      "properties": {
+        "promptText": {
+          "type": "string",
+          "description": "The text prompt the contributor was asked to speak."
+        },
+        "promptType": {
+          "type": "string",
+          "enum": ["spontaneous", "prompted", "read-aloud", "code-switched", "dialectal"],
+          "description": "Type of recording task."
+        },
+        "domain": {
+          "type": "string",
+          "enum": ["general", "banking", "healthcare", "e-commerce", "tourism", "legal", "social"],
+          "description": "Domain vertical for dataset categorisation."
+        },
+        "language": {
+          "type": "string",
+          "enum": ["darija", "darija-fr", "darija-ar", "darija-en", "tamazight"],
+          "description": "Primary language spoken in the recording."
+        }
+      }
+    },
+    "metadata": {
+      "type": "object",
+      "description": "Processing metadata added by the API.",
+      "additionalProperties": true,
+      "properties": {
+        "uploadedAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "uploadIp": {
+          "type": "string",
+          "description": "Pseudonymised IP (last octet zeroed for CNDP compliance)."
+        },
+        "appVersion": {
+          "type": "string",
+          "description": "Mobile or web app version used for recording."
+        },
+        "consentVersion": {
+          "type": "string",
+          "description": "Version of the consent form the contributor accepted."
+        }
+      }
+    }
+  },
+  "examples": [
+    {
+      "eventId": "550e8400-e29b-41d4-a716-446655440000",
+      "eventType": "audio.uploaded",
+      "version": "1.0",
+      "timestamp": "2025-06-15T09:30:00Z",
+      "audioId": "7c9e6679-7425-40de-944b-e07fc1f90ae7",
+      "contributorId": "d3aa88e2-c754-41e0-8ba6-4198a34aa0a2",
+      "taskId": "a87ff679-a2f3-471d-8672-4f4f4f4f4f4f",
+      "storage": {
+        "bucket": "tkllm-audio",
+        "key": "uploads/raw/7c9e6679-7425-40de-944b-e07fc1f90ae7.webm",
+        "sizeBytes": 245760,
+        "mimeType": "audio/webm",
+        "checksumSha256": "a665a45920422f9d417e4867efdc4fb8a04a1f3fff1fa07e998e86f7f7a27ae3"
+      },
+      "audio": {
+        "durationSeconds": 15.3,
+        "sampleRate": 16000,
+        "channels": 1,
+        "deviceType": "mobile"
+      },
+      "contributor": {
+        "region": "casablanca-settat",
+        "ageGroup": "25-34",
+        "gender": "male",
+        "nativeDialect": "casablanci",
+        "firstLanguage": "darija"
+      },
+      "task": {
+        "promptText": "واش عندك شي حاجة أرخص من هذي؟",
+        "promptType": "read-aloud",
+        "domain": "e-commerce",
+        "language": "darija"
+      }
+    }
+  ]
+}

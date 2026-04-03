@@ -1,0 +1,174 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://tkllm-darija.ma/schemas/messaging/quality-review.schema.json",
+  "title": "QualityReviewEvent",
+  "description": "Used for 'quality.review.requested' and 'quality.review.completed' Kafka topics.",
+  "oneOf": [
+    { "$ref": "#/definitions/QualityReviewRequested" },
+    { "$ref": "#/definitions/QualityReviewCompleted" }
+  ],
+  "definitions": {
+
+    "QualityReviewRequested": {
+      "title": "QualityReviewRequested",
+      "type": "object",
+      "required": ["eventId", "eventType", "version", "timestamp", "audioId", "contributorId", "taskId", "automated"],
+      "additionalProperties": false,
+      "properties": {
+        "eventId":       { "type": "string", "format": "uuid" },
+        "eventType":     { "type": "string", "const": "quality.review.requested" },
+        "version":       { "type": "string", "enum": ["1.0"] },
+        "timestamp":     { "type": "string", "format": "date-time" },
+        "audioId":       { "type": "string", "format": "uuid" },
+        "contributorId": { "type": "string", "format": "uuid" },
+        "taskId":        { "type": "string", "format": "uuid" },
+        "automated": {
+          "type": "object",
+          "description": "Results from the automated quality scoring pass.",
+          "required": ["overallScore", "reviewType"],
+          "additionalProperties": false,
+          "properties": {
+            "overallScore": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1,
+              "description": "Composite automated quality score. Below 0.60 = human review required."
+            },
+            "reviewType": {
+              "type": "string",
+              "enum": ["human-required", "active-learning", "spot-check"],
+              "description": "Why this submission was flagged for review."
+            },
+            "scores": {
+              "type": "object",
+              "description": "Individual dimension scores.",
+              "properties": {
+                "audioQuality":      { "type": "number", "minimum": 0, "maximum": 1, "description": "SNR, clipping, background noise." },
+                "transcriptAccuracy":{ "type": "number", "minimum": 0, "maximum": 1, "description": "WER estimate." },
+                "dialectAuthenticity":{ "type": "number", "minimum": 0, "maximum": 1, "description": "Darija dialect authenticity score." },
+                "taskCompletion":    { "type": "number", "minimum": 0, "maximum": 1, "description": "Did the speaker complete the prompt?" },
+                "coherence":         { "type": "number", "minimum": 0, "maximum": 1 }
+              }
+            },
+            "flags": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "enum": [
+                  "background-noise",
+                  "clipping",
+                  "too-short",
+                  "too-long",
+                  "wrong-language",
+                  "reading-not-spontaneous",
+                  "profanity",
+                  "pii-detected",
+                  "duplicate-submission",
+                  "transcript-mismatch",
+                  "low-confidence"
+                ]
+              }
+            }
+          }
+        },
+        "transcript": {
+          "type": "object",
+          "description": "ASR transcript to review.",
+          "properties": {
+            "text":       { "type": "string" },
+            "arabizi":    { "type": "string" },
+            "confidence": { "type": "number" }
+          }
+        },
+        "priority": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 10,
+          "default": 5,
+          "description": "Review priority. Higher = reviewed sooner."
+        }
+      }
+    },
+
+    "QualityReviewCompleted": {
+      "title": "QualityReviewCompleted",
+      "type": "object",
+      "required": ["eventId", "eventType", "version", "timestamp", "audioId", "contributorId", "taskId", "decision"],
+      "additionalProperties": false,
+      "properties": {
+        "eventId":       { "type": "string", "format": "uuid" },
+        "eventType":     { "type": "string", "const": "quality.review.completed" },
+        "version":       { "type": "string", "enum": ["1.0"] },
+        "timestamp":     { "type": "string", "format": "date-time" },
+        "audioId":       { "type": "string", "format": "uuid" },
+        "contributorId": { "type": "string", "format": "uuid" },
+        "taskId":        { "type": "string", "format": "uuid" },
+        "decision": {
+          "type": "object",
+          "required": ["outcome"],
+          "additionalProperties": false,
+          "properties": {
+            "outcome": {
+              "type": "string",
+              "enum": ["approved", "rejected", "re-record-requested", "escalated"],
+              "description": "Final quality decision."
+            },
+            "finalScore": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1,
+              "description": "Adjudicated quality score after human review."
+            },
+            "correctedTranscript": {
+              "type": "string",
+              "description": "Human-corrected transcript (if reviewer edited the ASR output)."
+            },
+            "rejectionReason": {
+              "type": "string",
+              "enum": [
+                "background-noise",
+                "wrong-language",
+                "incomplete-prompt",
+                "profanity",
+                "pii-detected",
+                "duplicate",
+                "inaudible",
+                "scripted-not-natural",
+                "other"
+              ],
+              "description": "Reason for rejection (required when outcome is 'rejected')."
+            },
+            "reviewMethod": {
+              "type": "string",
+              "enum": ["human", "auto-approved", "consensus"],
+              "description": "How the decision was reached."
+            },
+            "reviewerId": {
+              "type": "string",
+              "format": "uuid",
+              "description": "ID of the human reviewer (pseudonymised for privacy)."
+            },
+            "reviewDurationSeconds": {
+              "type": "number",
+              "description": "Time the reviewer spent on this task."
+            },
+            "interAnnotatorAgreement": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1,
+              "description": "Cohen's kappa if multiple reviewers were involved."
+            }
+          }
+        },
+        "rewardEligible": {
+          "type": "boolean",
+          "description": "Whether this submission should trigger a contributor reward."
+        },
+        "datasetEligible": {
+          "type": "boolean",
+          "description": "Whether this submission is approved for inclusion in the published dataset."
+        }
+      }
+    }
+  }
+}

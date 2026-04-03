@@ -1,0 +1,281 @@
+# =============================================================================
+# Kafka Consumer Groups — Tkllm-darija
+# infrastructure/messaging/kafka/consumer-groups.yml
+#
+# Documents all consumer groups, their consuming services, subscribed topics,
+# offset reset policies, and scaling behaviour (KEDA / manual).
+#
+# Offset reset policy guidance:
+#   earliest — replay all historical messages on restart (safe for idempotent
+#               workers like quality-engine, data-pipeline, financial-service)
+#   latest   — skip missed messages on restart (acceptable for analytics where
+#               gaps in metrics are tolerable, not for financial operations)
+#
+# Session timeout:
+#   Longer timeouts (60-90s) for ASR worker because GPU inference can take
+#   10-90s per audio file — a tight timeout would cause unnecessary rebalances.
+#   Default 30s for fast workers.
+# =============================================================================
+
+consumer_groups:
+
+  # ---------------------------------------------------------------------------
+  # ASR Worker — GPU transcription pipeline
+  # ---------------------------------------------------------------------------
+  - id: asr-worker-group
+    description: >
+      Consumes audio.uploaded and transcription.requested.
+      Runs Whisper large-v3 inference per message.
+      Scaled by KEDA based on transcription.requested lag.
+    service: asr-worker
+    topics:
+      - audio.uploaded
+      - transcription.requested
+    config:
+      auto.offset.reset: latest
+      enable.auto.commit: false          # manual commit after successful inference
+      max.poll.interval.ms: 300000       # 5 min — GPU inference can be slow
+      session.timeout.ms: 90000          # 90s — avoids rebalance during inference
+      heartbeat.interval.ms: 3000
+      max.poll.records: 1                # process one audio file at a time per worker
+      fetch.min.bytes: 1
+    scaling:
+      type: keda
+      trigger: kafka_lag
+      topic: transcription.requested
+      lag_threshold: 5
+      min_replicas: 0                    # scale to zero when idle
+      max_replicas: 5
+
+  # ---------------------------------------------------------------------------
+  # Quality Engine — validation and review routing
+  # ---------------------------------------------------------------------------
+  - id: quality-engine-group
+    description: >
+      Consumes transcription.completed and routes submissions through
+      automated scoring → human review pipeline.
+    service: quality-engine
+    topics:
+      - transcription.completed
+    config:
+      auto.offset.reset: earliest
+      enable.auto.commit: false
+      max.poll.interval.ms: 60000        # 1 min
+      session.timeout.ms: 30000
+      heartbeat.interval.ms: 3000
+      max.poll.records: 10               # batch 10 for scoring efficiency
+    scaling:
+      type: hpa
+      metric: cpu
+      min_replicas: 2
+      max_replicas: 8
+
+  - id: quality-review-group
+    description: >
+      Consumes quality.review.requested. Routes tasks to human reviewer
+      pool and active learning queue. Separate group from quality-engine-group
+      so human review rate is independently observable.
+    service: quality-engine
+    topics:
+      - quality.review.requested
+    config:
+      auto.offset.reset: earliest
+      enable.auto.commit: false
+      max.poll.interval.ms: 120000       # 2 min — human routing takes time
+      session.timeout.ms: 45000
+      heartbeat.interval.ms: 3000
+      max.poll.records: 5
+    scaling:
+      type: hpa
+      metric: cpu
+      min_replicas: 1
+      max_replicas: 4
+
+  # ---------------------------------------------------------------------------
+  # API — status updates from downstream pipelines
+  # ---------------------------------------------------------------------------
+  - id: api-transcription-group
+    description: >
+      Consumes transcription.completed to update contributor task status
+      (unlocks next task, credits pending reward state).
+    service: api
+    topics:
+      - transcription.completed
+    config:
+      auto.offset.reset: earliest
+      enable.auto.commit: true
+      auto.commit.interval.ms: 5000
+      max.poll.interval.ms: 30000
+      session.timeout.ms: 30000
+      heartbeat.interval.ms: 3000
+      max.poll.records: 50
+
+  - id: api-quality-group
+    description: >
+      Consumes quality.review.completed to update task status (approved /
+      rejected / flagged) and notify contributor via push/email.
+    service: api
+    topics:
+      - quality.review.completed
+    config:
+      auto.offset.reset: earliest
+      enable.auto.commit: true
+      auto.commit.interval.ms: 5000
+      max.poll.interval.ms: 30000
+      session.timeout.ms: 30000
+      max.poll.records: 50
+
+  - id: api-payment-group
+    description: >
+      Consumes payment.processed to update contributor payment history,
+      wallet status, and trigger transaction confirmation notification.
+    service: api
+    topics:
+      - payment.processed
+    config:
+      auto.offset.reset: earliest
+      enable.auto.commit: false          # manual commit — payment state must be consistent
+      max.poll.interval.ms: 30000
+      session.timeout.ms: 30000
+      max.poll.records: 10
+
+  # ---------------------------------------------------------------------------
+  # Financial Service — wallet and payments
+  # ---------------------------------------------------------------------------
+  - id: reward-group
+    description: >
+      Consumes quality.review.completed (approved events) to calculate
+      and issue contributor rewards. Single instance — wallet balance
+      mutations must be serialised per contributor.
+    service: financial-service
+    topics:
+      - quality.review.completed
+    config:
+      auto.offset.reset: earliest
+      enable.auto.commit: false
+      max.poll.interval.ms: 60000
+      session.timeout.ms: 45000
+      heartbeat.interval.ms: 3000
+      max.poll.records: 1                # one reward calculation at a time for idempotency
+
+  - id: wallet-group
+    description: >
+      Consumes reward.issued to credit contributor wallet balance.
+      Strictly ordered (single partition) — no parallel processing.
+    service: financial-service
+    topics:
+      - reward.issued
+    config:
+      auto.offset.reset: earliest
+      enable.auto.commit: false
+      max.poll.interval.ms: 30000
+      session.timeout.ms: 30000
+      max.poll.records: 1                # one wallet credit at a time
+
+  # ---------------------------------------------------------------------------
+  # Data Pipeline — ETL and dataset versioning
+  # ---------------------------------------------------------------------------
+  - id: pipeline-quality-group
+    description: >
+      Consumes quality.review.completed (approved) to move validated
+      transcripts into the versioned dataset store (Parquet / JSONL on S3/R2).
+      Idempotent — safe to re-process from earliest.
+    service: data-pipeline
+    topics:
+      - quality.review.completed
+    config:
+      auto.offset.reset: earliest
+      enable.auto.commit: false
+      max.poll.interval.ms: 300000       # 5 min — ETL writes can be slow
+      session.timeout.ms: 60000
+      heartbeat.interval.ms: 5000
+      max.poll.records: 100              # batch 100 records per ETL write
+
+  - id: pipeline-export-group
+    description: >
+      Consumes export.requested to assemble and upload B2B dataset packages.
+      Single instance — export jobs are long-running and use S3 multipart.
+    service: data-pipeline
+    topics:
+      - export.requested
+    config:
+      auto.offset.reset: earliest
+      enable.auto.commit: false
+      max.poll.interval.ms: 3600000      # 1 hour — large exports can take time
+      session.timeout.ms: 90000
+      heartbeat.interval.ms: 10000
+      max.poll.records: 1                # one export job at a time
+
+  # ---------------------------------------------------------------------------
+  # Analytics Service — metrics and KPI tracking
+  # ---------------------------------------------------------------------------
+  - id: analytics-group
+    description: >
+      Consumes transcription.completed and annotation.task.created for
+      throughput metrics and contributor activity dashboards.
+    service: analytics-service
+    topics:
+      - transcription.completed
+      - annotation.task.created
+    config:
+      auto.offset.reset: latest          # analytics can tolerate gaps
+      enable.auto.commit: true
+      auto.commit.interval.ms: 10000
+      max.poll.interval.ms: 30000
+      session.timeout.ms: 30000
+      max.poll.records: 500              # high batch size — analytics writes are fast
+
+  - id: analytics-quality-group
+    description: >
+      Consumes quality.review.completed for quality score tracking and
+      inter-annotator agreement metrics.
+    service: analytics-service
+    topics:
+      - quality.review.completed
+    config:
+      auto.offset.reset: latest
+      enable.auto.commit: true
+      auto.commit.interval.ms: 10000
+      max.poll.interval.ms: 30000
+      max.poll.records: 200
+
+  - id: analytics-reward-group
+    description: >
+      Consumes reward.issued for contributor earnings tracking and
+      reward volume KPIs.
+    service: analytics-service
+    topics:
+      - reward.issued
+    config:
+      auto.offset.reset: earliest        # earnings must be fully accounted for
+      enable.auto.commit: true
+      auto.commit.interval.ms: 5000
+      max.poll.interval.ms: 30000
+      max.poll.records: 100
+
+  - id: analytics-payment-group
+    description: >
+      Consumes payment.processed for payment gateway performance metrics,
+      MAD volume totals, and payout success rate dashboards.
+    service: analytics-service
+    topics:
+      - payment.processed
+    config:
+      auto.offset.reset: earliest
+      enable.auto.commit: true
+      auto.commit.interval.ms: 5000
+      max.poll.interval.ms: 30000
+      max.poll.records: 100
+
+  - id: analytics-export-group
+    description: >
+      Consumes export.requested for B2B export usage tracking.
+    service: analytics-service
+    topics:
+      - export.requested
+    config:
+      auto.offset.reset: latest
+      enable.auto.commit: true
+      auto.commit.interval.ms: 10000
+      max.poll.interval.ms: 30000
+      max.poll.records: 50

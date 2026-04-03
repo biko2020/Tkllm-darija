@@ -495,8 +495,11 @@ Tkllm-darija/
 │   │   │   ├── topics.yml                            # Definition of all Kafka topics
 │   │   │   └── consumer-groups.yml                   # Consumer group configurations
 │   │   │
-│   │   └── queues/
-│   │       └── schemas/                              # Job schemas and BullMQ/Redis queue definitions
+│   │   └── queues/                                   # Job queue definitions (BullMQ / Redis-based queues)
+│   │       └── schemas/                              # JSON schemas for queue job payloads (used for validation and documentation)
+│   │           ├── audio-upload.schema.json          # Schema for audio upload jobs (file metadata, contributor info, etc.)
+│   │           ├── quality-review.schema.json        # Schema for data quality review and validation tasks
+│   │           └── transcription.schema.json         # Schema for speech-to-text transcription jobs (audio reference, model settings, etc.)
 │   │
 │   └── scripts/                                      # Infrastructure-related helper scripts
 │        └── setup-local.sh                           # One-command setup for local environment 

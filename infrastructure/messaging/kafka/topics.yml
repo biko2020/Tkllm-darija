@@ -1,0 +1,165 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://tkllm-darija.ma/schemas/messaging/export.schema.json",
+  "title": "ExportRequestedEvent",
+  "description": "Emitted on 'export.requested' when a B2B customer orders a dataset export package via the enterprise portal.",
+  "type": "object",
+  "required": ["eventId", "eventType", "version", "timestamp", "exportId", "customerId", "dataset"],
+  "additionalProperties": false,
+  "properties": {
+    "eventId":    { "type": "string", "format": "uuid" },
+    "eventType":  { "type": "string", "const": "export.requested" },
+    "version":    { "type": "string", "enum": ["1.0"] },
+    "timestamp":  { "type": "string", "format": "date-time" },
+    "exportId": {
+      "type": "string",
+      "format": "uuid",
+      "description": "Unique export job identifier. Used as the S3 key prefix."
+    },
+    "customerId": {
+      "type": "string",
+      "format": "uuid",
+      "description": "B2B customer (organisation) ID."
+    },
+    "requestedBy": {
+      "type": "string",
+      "format": "uuid",
+      "description": "User ID within the customer organisation who placed the order."
+    },
+    "dataset": {
+      "type": "object",
+      "required": ["type", "version"],
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": ["speech-to-text", "parallel-corpus", "annotated-full", "custom"],
+          "description": "Dataset product type."
+        },
+        "version": {
+          "type": "string",
+          "description": "Dataset version (e.g. 'v1', 'v2', 'latest')."
+        },
+        "filters": {
+          "type": "object",
+          "description": "Optional filters to create a custom subset.",
+          "additionalProperties": false,
+          "properties": {
+            "domains": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "enum": ["general", "banking", "healthcare", "e-commerce", "tourism", "legal", "social"]
+              },
+              "description": "Filter by domain vertical."
+            },
+            "languages": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "enum": ["darija", "darija-fr", "darija-ar", "darija-en", "tamazight"]
+              }
+            },
+            "regions": {
+              "type": "array",
+              "items": { "type": "string" },
+              "description": "Moroccan regions to include."
+            },
+            "minQualityScore": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1,
+              "default": 0.75,
+              "description": "Minimum annotation quality score threshold."
+            },
+            "maxRecords": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 1000000,
+              "description": "Maximum number of records to include."
+            },
+            "dateRange": {
+              "type": "object",
+              "properties": {
+                "from": { "type": "string", "format": "date" },
+                "to":   { "type": "string", "format": "date" }
+              }
+            }
+          }
+        },
+        "format": {
+          "type": "string",
+          "enum": ["parquet", "jsonl", "csv", "hf-dataset"],
+          "default": "parquet",
+          "description": "Output format. hf-dataset = HuggingFace datasets format."
+        },
+        "includeAudio": {
+          "type": "boolean",
+          "default": false,
+          "description": "Whether to bundle audio files alongside transcripts."
+        },
+        "license": {
+          "type": "string",
+          "enum": ["commercial", "research-only", "cc-by-4.0"],
+          "description": "License under which the dataset is provided."
+        }
+      }
+    },
+    "delivery": {
+      "type": "object",
+      "description": "How and where to deliver the export.",
+      "additionalProperties": false,
+      "properties": {
+        "method": {
+          "type": "string",
+          "enum": ["signed-url", "s3-push", "hf-push"],
+          "default": "signed-url",
+          "description": "signed-url = pre-signed S3 URL in email; s3-push = push to customer S3 bucket; hf-push = publish to HuggingFace Hub."
+        },
+        "destination": {
+          "type": "object",
+          "description": "Destination details (only for s3-push and hf-push).",
+          "properties": {
+            "s3Bucket":   { "type": "string" },
+            "s3Prefix":   { "type": "string" },
+            "hfRepo":     { "type": "string", "description": "HuggingFace repo ID (e.g. 'customer-org/darija-asr')." },
+            "hfToken":    { "type": "string", "description": "HuggingFace write token (encrypted)." }
+          }
+        },
+        "notifyEmail": {
+          "type": "string",
+          "format": "email",
+          "description": "Email to notify when export is ready."
+        },
+        "webhookUrl": {
+          "type": "string",
+          "format": "uri",
+          "description": "Webhook to POST when export completes."
+        },
+        "expiresIn": {
+          "type": "integer",
+          "minimum": 3600,
+          "maximum": 604800,
+          "default": 604800,
+          "description": "Signed URL expiry in seconds (default 7 days)."
+        }
+      }
+    },
+    "pricing": {
+      "type": "object",
+      "description": "Pricing metadata for analytics and invoicing.",
+      "properties": {
+        "plan":          { "type": "string", "enum": ["starter", "professional", "enterprise", "research"] },
+        "recordsQuota":  { "type": "integer" },
+        "priceUsd":      { "type": "number" }
+      }
+    },
+    "priority": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 10,
+      "default": 5,
+      "description": "Export job priority. Enterprise customers get priority 8."
+    }
+  }
+}
