@@ -243,151 +243,194 @@ Tkllm-darija/
 │       └── .dvc/                                     # DVC cache & remote pointers
 │
 ├── infrastructure/
-│   ├── terraform/                                    # Infrastructure-as-Code for cloud (AWS/GCP/DO/etc.)
-│   │   ├── modules/                                  # Reusable Terraform modules for infrastructure components
-│   │   │   ├── vpc/                                  # VPC, subnets, internet gateways, NAT gateways
-│   │   │   │   ├── main.tf                           # VPC module definition
-│   │   │   │   ├── variables.tf                      # Input variables for VPC configuration
-│   │   │   │   ├── outputs.tf                        # Output values from VPC module
-│   │   │   │   └── README.md                         # Documentation for VPC module
-│   │   │   ├── eks/                                  # Amazon EKS cluster and node groups
-│   │   │   │   ├── main.tf                           # EKS cluster configuration
-│   │   │   │   ├── variables.tf                      # EKS-specific variables
-│   │   │   │   ├── outputs.tf                        # EKS outputs (cluster endpoint, etc.)
-│   │   │   │   └── README.md                         # EKS module documentation
-│   │   │   ├── rds/                                  # Amazon RDS PostgreSQL instance
-│   │   │   │   ├── main.tf                           # RDS instance and parameter groups
-│   │   │   │   ├── variables.tf                      # Database configuration variables
-│   │   │   │   ├── outputs.tf                        # Database connection outputs
-│   │   │   │   └── README.md                         # RDS module docs
-│   │   │   ├── s3/                                   # S3 buckets for object storage
-│   │   │   │   ├── main.tf                           # Bucket creation and policies
-│   │   │   │   ├── variables.tf                      # Bucket configuration variables
-│   │   │   │   ├── outputs.tf                        # Bucket names and ARNs
-│   │   │   │   └── README.md                         # S3 module documentation
-│   │   │   ├── redis/                                # ElastiCache Redis cluster
-│   │   │   │   ├── main.tf                           # Redis cluster configuration
-│   │   │   │   ├── variables.tf                      # Redis settings
-│   │   │   │   ├── outputs.tf                        # Redis endpoints
-│   │   │   │   └── README.md                         # Redis module docs
-│   │   │   ├── kafka/                                # Amazon MSK Kafka cluster
-│   │   │   │   ├── main.tf                           # MSK cluster setup
-│   │   │   │   ├── variables.tf                      # Kafka configuration
-│   │   │   │   ├── outputs.tf                        # Bootstrap servers
-│   │   │   │   └── README.md                         # Kafka module documentation
-│   │   │   └── monitoring/                           # CloudWatch, Prometheus, and alerting
-│   │   │       ├── main.tf                           # Monitoring resources
-│   │   │       ├── variables.tf                      # Monitoring variables
-│   │   │       ├── outputs.tf                        # Monitoring outputs
-│   │   │       └── README.md                         # Monitoring module docs
-│   │   ├── environments/                             # Environment-specific Terraform configurations
-│   │   │   ├── dev/                                  # Development environment setup
-│   │   │   │   ├── main.tf                           # Root module for dev environment
-│   │   │   │   ├── variables.tf                      # Dev-specific variables
-│   │   │   │   ├── terraform.tfvars                  # Variable values for development
-│   │   │   │   ├── outputs.tf                        # Outputs for dev environment
-│   │   │   │   └── backend.tf                        # State backend for dev
-│   │   │   ├── staging/                              # Staging environment configuration
-│   │   │   │   ├── main.tf                           # Root module for staging
-│   │   │   │   ├── variables.tf                      # Staging variables
-│   │   │   │   ├── terraform.tfvars                  # Staging variable values
-│   │   │   │   ├── outputs.tf                        # Staging outputs
-│   │   │   │   └── backend.tf                        # Staging state backend
-│   │   │   └── prod/                                 # Production environment setup
-│   │   │       ├── main.tf                           # Root module for production
-│   │   │       ├── variables.tf                      # Production variables
-│   │   │       ├── terraform.tfvars                  # Production variable values
-│   │   │       ├── outputs.tf                        # Production outputs
-│   │   │       └── backend.tf                        # Production state backend
-│   │   ├── shared/                                   # Shared Terraform configurations
-│   │   │   ├── providers.tf                          # AWS provider and version constraints
-│   │   │   ├── backend.tf                            # Remote state backend configuration
-│   │   │   ├── data.tf                               # Data sources for existing resources
-│   │   │   └── versions.tf                           # Terraform and provider version requirements
-│   │   └── scripts/                                  # Helper scripts for Terraform operations
-│   │       ├── init.sh                               # Terraform initialization script
-│   │       ├── plan.sh                               # Script to run terraform plan
-│   │       ├── apply.sh                              # Script to run terraform apply
-│   │       └── destroy.sh                            # Script to destroy resources
+│   ├── terraform/                                    # Infrastructure-as-Code using Terraform (AWS)
+│   │   ├── backend.tf                                # Remote state backend configuration (S3 + DynamoDB)
+│   │   ├── main.tf                                   # Root entry point - calls shared config and environment-specific modules
+│   │   ├── outputs.tf                                # Root-level outputs (cluster endpoint, database URLs, bucket names, etc.)
+│   │   ├── providers.tf                              # AWS provider configuration (can be moved to shared/ later)
+│   │   ├── terraform.tfvars.example                  # Example variable file (never commit real values)
+│   │   ├── variables.tf                              # Global input variables (project_name, region, environment, etc.)
+│   │   ├── versions.tf                               # Terraform and provider version constraints
+│   │   │
+│   │   ├── modules/                                  # Reusable Terraform modules
+│   │   │   ├── vpc/
+│   │   │   │   ├── main.tf
+│   │   │   │   ├── variables.tf
+│   │   │   │   ├── outputs.tf
+│   │   │   │   └── README.md                         # Module documentation and usage examples
+│   │   │   │
+│   │   │   ├── eks/
+│   │   │   │   ├── main.tf
+│   │   │   │   ├── variables.tf
+│   │   │   │   ├── outputs.tf
+│   │   │   │   └── README.md
+│   │   │   │
+│   │   │   ├── iam/                                   # IAM roles, policies, and IRSA (IAM Roles for Service Accounts)
+│   │   │   │   ├── main.tf                            # IAM roles for EKS, S3 access, Secrets Manager, etc.
+│   │   │   │   ├── variables.tf
+│   │   │   │   ├── outputs.tf                         # Output IAM role ARNs
+│   │   │   │   └── README.md                          # IAM module documentation
+│   │   │   │
+│   │   │   ├── rds/
+│   │   │   │   ├── main.tf
+│   │   │   │   ├── variables.tf
+│   │   │   │   ├── outputs.tf
+│   │   │   │   └── README.md
+│   │   │   │
+│   │   │   ├── elasticache/                         # Redis (AWS ElastiCache)
+│   │   │   │   ├── main.tf
+│   │   │   │   ├── variables.tf
+│   │   │   │   ├── outputs.tf
+│   │   │   │   └── README.md
+│   │   │   │
+│   │   │   ├── msk/                                 # Kafka (AWS Managed Streaming for Kafka)
+│   │   │   │   ├── main.tf
+│   │   │   │   ├── variables.tf
+│   │   │   │   ├── outputs.tf
+│   │   │   │   └── README.md
+│   │   │   │
+│   │   │   ├── s3/
+│   │   │   │   ├── main.tf
+│   │   │   │   ├── variables.tf
+│   │   │   │   ├── outputs.tf
+│   │   │   │   └── README.md
+│   │   │   │
+│   │   │   ├── ecr/
+│   │   │   │   ├── main.tf
+│   │   │   │   ├── variables.tf
+│   │   │   │   ├── outputs.tf
+│   │   │   │   └── README.md
+│   │   │   │
+│   │   │   ├── cloudflare/
+│   │   │   │   ├── main.tf
+│   │   │   │   ├── variables.tf
+│   │   │   │   ├── outputs.tf
+│   │   │   │   └── README.md
+│   │   │   │
+│   │   │   ├── ssm/
+│   │   │   │   ├── main.tf
+│   │   │   │   ├── variables.tf
+│   │   │   │   ├── outputs.tf
+│   │   │   │   └── README.md
+│   │   │   │
+│   │   │   └── monitoring/                          # CloudWatch alarms, log groups, SNS topics for alerting
+│   │   │       ├── main.tf
+│   │   │       ├── variables.tf
+│   │   │       ├── outputs.tf
+│   │   │       └── README.md
+│   │   │
+│   │   ├── shared/                                  # Shared configurations (recommended for maintainability)
+│   │   │   ├── providers.tf                         # Common provider blocks
+│   │   │   ├── backend.tf                           # Remote state backend (S3 + DynamoDB locking)
+│   │   │   ├── versions.tf                          # Terraform + provider versions
+│   │   │   └── data.tf                              # Common data sources
+│   │   │
+│   │   ├── environments/                            # Environment-specific configurations
+│   │   │   ├── dev/
+│   │   │   │   ├── main.tf                          # Calls root modules with dev-specific values
+│   │   │   │   ├── variables.tf
+│   │   │   │   ├── terraform.tfvars                 # Dev variable values (smaller instances, etc.)
+│   │   │   │   ├── outputs.tf
+│   │   │   │   └── backend.tf                       # Dev-specific state backend
+│   │   │   │
+│   │   │   ├── staging/
+│   │   │   │   ├── main.tf
+│   │   │   │   ├── variables.tf
+│   │   │   │   ├── terraform.tfvars
+│   │   │   │   ├── outputs.tf
+│   │   │   │   └── backend.tf
+│   │   │   │
+│   │   │   └── prod/
+│   │   │       ├── main.tf
+│   │   │       ├── variables.tf
+│   │   │       ├── terraform.tfvars                 # Production values (larger resources, multi-AZ, stricter security)
+│   │   │       ├── outputs.tf
+│   │   │       └── backend.tf
+│   │   │
+│   │   └── scripts/                                 # Helper scripts for common Terraform workflows
+│   │       ├── init.sh                              # Wrapper for terraform init
+│   │       ├── plan.sh                              # Wrapper for terraform plan with proper workspace
+│   │       ├── apply.sh                             # Wrapper for terraform apply
+│   │       └── destroy.sh                           # Wrapper for terraform destroy (with confirmation)
 │   │
-│   ├── k8s/                                          # Kubernetes manifests (deployment, scaling, networking, security)                             
-│   │   ├── base/                                     # Environment-agnostic base resources (shared across all environments)
-│   │   │   ├── kustomization.yaml                    # Root Kustomize file aggregating all base resources
-│   │   │   ├── namespace.yaml                        # Defines the tkllm-darija namespace
-│   │   │   ├── rbac/                                 # Role-Based Access Control (security & permissions)
-│   │   │   │   └── rbac.yaml                         # ServiceAccounts, Roles, ClusterRoles, IRSA bindings (AWS IAM integration)
+│   ├── k8s/                                         # Kubernetes manifests (deployment, scaling, networking, security)                             
+│   │   ├── base/                                    # Environment-agnostic base resources (shared across all environments)
+│   │   │   ├── kustomization.yaml                   # Root Kustomize file aggregating all base resources
+│   │   │   ├── namespace.yaml                       # Defines the tkllm-darija namespace
+│   │   │   ├── rbac/                                # Role-Based Access Control (security & permissions)
+│   │   │   │   └── rbac.yaml                        # ServiceAccounts, Roles, ClusterRoles, IRSA bindings (AWS IAM integration)
 │   │   │   │
-│   │   │   ├── network-policies/                     # Zero-trust networking rules
-│   │   │   │   └── default-deny.yaml                 # Deny all traffic by default, allow only explicit service communication
+│   │   │   ├── network-policies/                    # Zero-trust networking rules
+│   │   │   │   └── default-deny.yaml                # Deny all traffic by default, allow only explicit service communication
 │   │   │   │
-│   │   │   ├── storage/                              # Persistent storage configuration
-│   │   │   │   └── pvcs.yaml                         # PersistentVolumeClaims for databases, caches, and ML storage
+│   │   │   ├── storage/                             # Persistent storage configuration
+│   │   │   │   └── pvcs.yaml                        # PersistentVolumeClaims for databases, caches, and ML storage
 │   │   │   │
-│   │   │   ├── configmaps/                           # Non-sensitive configuration shared across services
-│   │   │   │   ├── common.yaml                       # Shared configs (Kafka topics, feature flags, thresholds)
-│   │   │   │   ├── api.yaml                          # API-specific settings (CORS, rate limits, feature toggles)
-│   │   │   │   └── ml.yaml                           # ML configs (ASR models, MLflow, Prefect, DVC settings)
+│   │   │   ├── configmaps/                          # Non-sensitive configuration shared across services
+│   │   │   │   ├── common.yaml                      # Shared configs (Kafka topics, feature flags, thresholds)
+│   │   │   │   ├── api.yaml                         # API-specific settings (CORS, rate limits, feature toggles)
+│   │   │   │   └── ml.yaml                          # ML configs (ASR models, MLflow, Prefect, DVC settings)
 │   │   │   │
-│   │   │   ├── secrets/                              # Sensitive configuration management
-│   │   │   │   ├── secret-template.yaml              # Template with placeholder values (for documentation/reference)
-│   │   │   │   └── external-secrets.yaml             # ExternalSecret CRs (pull secrets from AWS SSM / Secrets Manager)
+│   │   │   ├── secrets/                             # Sensitive configuration management
+│   │   │   │   ├── secret-template.yaml             # Template with placeholder values (for documentation/reference)
+│   │   │   │   └── external-secrets.yaml            # ExternalSecret CRs (pull secrets from AWS SSM / Secrets Manager)
 │   │   │   │
-│   │   │   ├── statefulsets/                         # Stateful infrastructure services (require persistent storage)
-│   │   │   │   ├── postgres/                         # PostgreSQL / TimescaleDB database
-│   │   │   │   │   ├── infrastructure.yaml           # Database StatefulSet (persistent identity + storage)
-│   │   │   │   │   ├── service.yaml                  # Internal service for database access
-│   │   │   │   │   └── kustomization.yaml            # Kustomize config for PostgreSQL resources                                            
-│   │   │   │   ├── redis/                            # Redis (cache + queue backend)
-│   │   │   │   │   ├── infrastructure.yaml           # Redis StatefulSet with resource limits and persistence
-│   │   │   │   │   ├── service.yaml                  # ClusterIP Service exposing Redis on port 6379
-│   │   │   │   │   ├── kustomization.yaml            # Kustomize file to combine resources and inject secrets
-│   │   │   │   ├── kafka/                            # Kafka (event streaming platform)
-│   │   │   │   │   ├── infrastructure.yaml           # Kafka StatefulSet with broker configuration
-│   │   │   │   │   ├── service.yaml                  # Headless Service for Kafka brokers
-│   │   │   │   │   ├── kustomization.yaml            # Kustomize configuration for Kafka
-│   │   │   │   └── weaviate/                         # Vector database for embeddings / semantic search
-│   │   │   │       ├── infrastructure.yaml           # Weaviate StatefulSet with persistent storage
-│   │   │   │       ├── service.yaml                  # ClusterIP Service exposing Weaviate (HTTP + gRPC)
-│   │   │   │       └── kustomization.yaml            # Kustomize file for Weaviate resources
+│   │   │   ├── statefulsets/                        # Stateful infrastructure services (require persistent storage)
+│   │   │   │   ├── postgres/                        # PostgreSQL / TimescaleDB database
+│   │   │   │   │   ├── infrastructure.yaml          # Database StatefulSet (persistent identity + storage)
+│   │   │   │   │   ├── service.yaml                 # Internal service for database access
+│   │   │   │   │   └── kustomization.yaml           # Kustomize config for PostgreSQL resources                                            
+│   │   │   │   ├── redis/                           # Redis (cache + queue backend)
+│   │   │   │   │   ├── infrastructure.yaml          # Redis StatefulSet with resource limits and persistence
+│   │   │   │   │   ├── service.yaml                 # ClusterIP Service exposing Redis on port 6379
+│   │   │   │   │   ├── kustomization.yaml           # Kustomize file to combine resources and inject secrets
+│   │   │   │   ├── kafka/                           # Kafka (event streaming platform)
+│   │   │   │   │   ├── infrastructure.yaml          # Kafka StatefulSet with broker configuration
+│   │   │   │   │   ├── service.yaml                 # Headless Service for Kafka brokers
+│   │   │   │   │   ├── kustomization.yaml           # Kustomize configuration for Kafka
+│   │   │   │   └── weaviate/                        # Vector database for embeddings / semantic search
+│   │   │   │       ├── infrastructure.yaml          # Weaviate StatefulSet with persistent storage
+│   │   │   │       ├── service.yaml                 # ClusterIP Service exposing Weaviate (HTTP + gRPC)
+│   │   │   │       └── kustomization.yaml           # Kustomize file for Weaviate resources
 │   │   │   │
-│   │   │   ├── deployments/                          # Stateless application and worker services
-│   │   │   │   ├── api/                              # Main backend API (NestJS)
-│   │   │   │   │   ├── apps.yaml                     # API deployment (pods, containers, env config)
-│   │   │   │   │   ├── service.yaml                  # ClusterIP service exposing API internally
-│   │   │   │   │   ├── hpa.yaml                      # Horizontal Pod Autoscaler (CPU/memory-based scaling)
-│   │   │   │   │   └── pdb.yaml                      # PodDisruptionBudget (ensures minimum availability during updates)
+│   │   │   ├── deployments/                         # Stateless application and worker services
+│   │   │   │   ├── api/                             # Main backend API (NestJS)
+│   │   │   │   │   ├── apps.yaml                    # API deployment (pods, containers, env config)
+│   │   │   │   │   ├── service.yaml                 # ClusterIP service exposing API internally
+│   │   │   │   │   ├── hpa.yaml                     # Horizontal Pod Autoscaler (CPU/memory-based scaling)
+│   │   │   │   │   └── pdb.yaml                     # PodDisruptionBudget (ensures minimum availability during updates)
 │   │   │   │   │
-│   │   │   │   ├── asr-worker/                       # Speech-to-text worker (GPU-enabled if needed)
-│   │   │   │   │   ├── deployment.yaml               # Worker deployment (batch/queue processing)
-│   │   │   │   │   └── keda.yaml                     # KEDA autoscaling based on Kafka lag or queue size
+│   │   │   │   ├── asr-worker/                      # Speech-to-text worker (GPU-enabled if needed)
+│   │   │   │   │   ├── deployment.yaml              # Worker deployment (batch/queue processing)
+│   │   │   │   │   └── keda.yaml                    # KEDA autoscaling based on Kafka lag or queue size
 │   │   │   │   │
-│   │   │   │   ├── web-contributor/                  # Contributor-facing web app (Next.js)
-│   │   │   │   │   ├── deployment.yaml               # Kubernetes Deployment for the Next.js contributor web application (.. requests/limits) 
-│   │   │   │   │   ├── service.yaml                  # ClusterIP Service to expose the contributor web app internally within the cluster
-│   │   │   │   │   ├── hpa.yaml                      # Horizontal Pod Autoscaler (HPA) to automatically scale based on CPU/memory usage
-│   │   │   │   │   └── pdb.yaml                      # PodDisruptionBudget to ensure minimum availability during voluntary disruptions
+│   │   │   │   ├── web-contributor/                 # Contributor-facing web app (Next.js)
+│   │   │   │   │   ├── deployment.yaml              # Kubernetes Deployment for the Next.js contributor web application (.. requests/limits) 
+│   │   │   │   │   ├── service.yaml                 # ClusterIP Service to expose the contributor web app internally within the cluster
+│   │   │   │   │   ├── hpa.yaml                     # Horizontal Pod Autoscaler (HPA) to automatically scale based on CPU/memory usage
+│   │   │   │   │   └── pdb.yaml                     # PodDisruptionBudget to ensure minimum availability during voluntary disruptions
 │   │   │   │   │
-│   │   │   │   ├── web-b2b/                          # Enterprise dashboard (Next.js)
+│   │   │   │   ├── web-b2b/                         # Enterprise dashboard (Next.js)
 │   │   │   │   │   └── deployment.yaml     
 │   │   │   │   │
-│   │   │   │   ├── quality-engine/                   # Data validation and scoring service
-│   │   │   │   │   ├── deployment.yaml               # K.D for the quality engine (data validation, scoring, and active learning logic)
-│   │   │   │   │   ├── service.yaml                  # C.S to expose the quality engine internally for other services to submit validation tasks
-│   │   │   │   │   └── hpa.yaml                      # Ho.Pod.Auto to scale based on CPU/memory or custom metrics (e.g., task queue length)
+│   │   │   │   ├── quality-engine/                  # Data validation and scoring service
+│   │   │   │   │   ├── deployment.yaml              # K.D for the quality engine (data validation, scoring, and active learning logic)
+│   │   │   │   │   ├── service.yaml                 # C.S to expose the quality engine internally for other services to submit validation tasks
+│   │   │   │   │   └── hpa.yaml                     # Ho.Pod.Auto to scale based on CPU/memory or custom metrics (e.g., task queue length)
 │   │   │   │   │
-│   │   │   │   ├── data-pipeline/                    # ETL and dataset processing service
-│   │   │   │   │   ├── deployment.yaml               # Kubernetes Deployment for the data pipeline service
-│   │   │   │   │   └── service.yaml                  # ClusterIP Service for internal communication with the pipeline
+│   │   │   │   ├── data-pipeline/                   # ETL and dataset processing service
+│   │   │   │   │   ├── deployment.yaml              # Kubernetes Deployment for the data pipeline service
+│   │   │   │   │   └── service.yaml                 # ClusterIP Service for internal communication with the pipeline
 │   │   │   │   │
-│   │   │   │   ├── financial-service/                # Payments, wallet, and fraud detection
-│   │   │   │   │   ├── deployment.yaml               # Kubernetes Deployment for the financial service
-│   │   │   │   │   ├── service.yaml                  # ClusterIP Service exposing the financial service
-│   │   │   │   │   ├── hpa.yaml                      # Horizontal Pod Autoscaler for the financial service
-│   │   │   │   │   └── pdb.yaml                      # Payments must survive node drains
+│   │   │   │   ├── financial-service/               # Payments, wallet, and fraud detection
+│   │   │   │   │   ├── deployment.yaml              # Kubernetes Deployment for the financial service
+│   │   │   │   │   ├── service.yaml                 # ClusterIP Service exposing the financial service
+│   │   │   │   │   ├── hpa.yaml                     # Horizontal Pod Autoscaler for the financial service
+│   │   │   │   │   └── pdb.yaml                     # Payments must survive node drains
 │   │   │   │   │
-│   │   │   │   └── analytics-service/                # Metrics, user activity, and data insights
-│   │   │   │       ├── deployment.yaml               # Kubernetes Deployment for the financial service
-│   │   │   │       └── service.yaml                  # ClusterIP Service exposing the financial service
+│   │   │   │   └── analytics-service/               # Metrics, user activity, and data insights
+│   │   │   │       ├── deployment.yaml              # Kubernetes Deployment for the financial service
+│   │   │   │       └── service.yaml                 # ClusterIP Service exposing the financial service
 │   │   │   │       
 │   │   │   │
 │   │   │   └── ingress/                              # External access configuration
@@ -519,8 +562,8 @@ Tkllm-darija/
 ├──.env.example
 ├──.env
 ├── CONTRIBUTING.md
-├── package.json                                    # Root workspace configuration
-├── turbo.json                                      # Turborepo monorepo config
+├── package.json                                     # Root workspace configuration
+├── turbo.json                                       # Turborepo monorepo config
 └── LICENSE
 ```
 
