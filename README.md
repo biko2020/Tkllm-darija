@@ -502,6 +502,12 @@ Tkllm-darija/
 │   │           └── transcription.schema.json         # Schema for speech-to-text transcription jobs (audio reference, model settings, etc.)
 │   │
 │   └── scripts/                                      # Infrastructure-related helper scripts
+│        ├── db-reset.sh                              # Reset and clean the local PostgreSQL database (drops and recreates schema + runs migrations)
+│        ├── health-check.sh                          # Perform health checks on all local services (API, Postgres, Redis, Kafka, MinIO, etc.)
+│        ├── k8s-deploy.sh                            # Deploy Kubernetes resources using Kustomize (supports dev/staging/prod environments)
+│        ├── rotate-secrets.sh                        # Rotate sensitive secrets and regenerate environment-specific credentials
+│        ├── seed-kafka-topics.sh                     # Create and configure all required Kafka topics with proper partitions and replication
+│        ├── seed-minio-buckets.sh                    # Create and configure all necessary MinIO/S3 buckets with correct policies
 │        └── setup-local.sh                           # One-command setup for local environment 
 │
 ├── docs/                                             # Architecture decisions, API docs, guides
