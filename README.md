@@ -334,11 +334,11 @@ Tkllm-darija/
 │   │   │   │   └── backend.tf                       # Dev-specific state backend
 │   │   │   │
 │   │   │   ├── staging/
-│   │   │   │   ├── main.tf
-│   │   │   │   ├── variables.tf
-│   │   │   │   ├── terraform.tfvars
-│   │   │   │   ├── outputs.tf
-│   │   │   │   └── backend.tf
+│   │   │   │   ├── main.tf                          # calls shared modules with staging-specific values
+│   │   │   │   ├── variables.tf                     # Variable definitions specific to the staging environment
+│   │   │   │   ├── terraform.tfvars                 # Actual variable values for staging (medium-sized resources, etc)
+│   │   │   │   ├── outputs.tf                       # Staging-specific outputs (endpoints, resource ARNs,etc.)
+│   │   │   │   └── backend.tf                       # Remote state backend configuration for the staging environment.
 │   │   │   │
 │   │   │   └── prod/
 │   │   │       ├── main.tf
