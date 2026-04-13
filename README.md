@@ -313,10 +313,10 @@ Tkllm-darija/
 │   │   │   │   ├── outputs.tf
 │   │   │   │   └── README.md
 │   │   │   │
-│   │   │   └── monitoring/                          # CloudWatch alarms, log groups, SNS topics for alerting
-│   │   │       ├── main.tf
-│   │   │       ├── variables.tf
-│   │   │       ├── outputs.tf
+│   │   │   └── monitoring/                          # CloudWatch alarms, log groups, and SNS topics for alerting
+│   │   │       ├── main.tf                          # Creates CloudWatch metric alarms, log groups,SNS topics for monitoring and notifications	
+│   │   │       ├── variables.tf                     # Input variables for alarm thresholds, SNS topics, and notification settings
+│   │   │       ├── outputs.tf                       # Outputs SNS topic ARNs, alarm names, and monitoring resources
 │   │   │       └── README.md
 │   │   │
 │   │   ├── shared/                                  # Shared configurations (recommended for maintainability)
