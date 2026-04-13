@@ -341,11 +341,11 @@ Tkllm-darija/
 │   │   │   │   └── backend.tf                       # Remote state backend configuration for the staging environment.
 │   │   │   │
 │   │   │   └── prod/
-│   │   │       ├── main.tf
-│   │   │       ├── variables.tf
-│   │   │       ├── terraform.tfvars                 # Production values (larger resources, multi-AZ, stricter security)
-│   │   │       ├── outputs.tf
-│   │   │       └── backend.tf
+│   │   │       ├── main.tf                            # Orchestrates all Terraform modules with production-grade
+│   │   │       ├── variables.tf                       # Variable definitions specific to the production environment
+│   │   │       ├── terraform.tfvars                   # Production values (larger resources,stricter security)
+│   │   │       ├── outputs.tf                         # Production environment outputs
+│   │   │       └── backend.tf                         # Remote state backend configuration
 │   │   │
 │   │   └── scripts/                                 # Helper scripts for common Terraform workflows
 │   │       ├── init.sh                              # Wrapper for terraform init
