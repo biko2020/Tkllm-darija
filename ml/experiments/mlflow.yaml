@@ -1,0 +1,133 @@
+# =============================================================================
+# MLflow Project Configuration
+# ml/experiments/mlflow.yaml
+#
+# Defines experiments, registered models, and artifact stores.
+# Used by the MLflow tracking server and CI/CD pipelines.
+#
+# Apply via MLflow CLI:
+#   mlflow experiments create --experiment-name tkllm-darija-asr
+#   mlflow run ml/ --entry-point train_whisper --param-list config=...
+# =============================================================================
+
+# ── Tracking Server ───────────────────────────────────────────────────────────
+tracking_uri: "http://localhost:5000"     # Local docker-compose
+# tracking_uri: "http://mlflow:5000"      # In-cluster (K8s)
+# tracking_uri: "https://mlflow.tkllm-darija.ma"  # Production
+
+# ── Artifact Store ────────────────────────────────────────────────────────────
+artifact_root: "s3://tkllm-models/mlflow"
+s3_endpoint_url: "http://localhost:9000"  # MinIO local (change for R2 in prod)
+
+# =============================================================================
+# Experiments
+# =============================================================================
+experiments:
+
+  - name: "tkllm-darija-asr"
+    description: >
+      Automatic Speech Recognition experiments for Moroccan Darija.
+      Models: Whisper (tiny → large-v3), wav2vec 2.0, SpeechBrain.
+      Metric of interest: WER (lower is better).
+    tags:
+      language:   "darija"
+      task:       "asr"
+      team:       "ml"
+
+  - name: "tkllm-darija-quality"
+    description: >
+      Audio and annotation quality scoring models.
+      Predicts: quality_score, is_acceptable, rejection_reason.
+    tags:
+      task:  "classification"
+      team:  "ml"
+
+  - name: "tkllm-darija-dialect"
+    description: >
+      Dialect identification model (casablanci, marrakchi, fassi, rbati, souss).
+      Used for demographic metadata enrichment.
+    tags:
+      task:  "classification"
+      team:  "ml"
+
+  - name: "tkllm-darija-embeddings"
+    description: >
+      Audio and text embedding experiments.
+      Models: Whisper encoder, multilingual-e5, BERT-Arabic.
+      Metric: semantic similarity on Darija query pairs.
+    tags:
+      task:  "embeddings"
+      team:  "ml"
+
+# =============================================================================
+# Registered Models
+# =============================================================================
+models:
+
+  - name: "whisper-darija-production"
+    description: "Production Whisper model fine-tuned on Moroccan Darija"
+    tags:
+      base_model:    "openai/whisper-large-v3"
+      language:      "darija"
+      target_wer:    "0.15"
+    stages:
+      - Staging
+      - Production
+      - Archived
+
+  - name: "whisper-darija-dev"
+    description: "Development Whisper small model for rapid iteration"
+    tags:
+      base_model: "openai/whisper-small"
+
+  - name: "darija-quality-scorer"
+    description: "Audio quality scoring classifier"
+    tags:
+      task: "quality-classification"
+
+  - name: "darija-dialect-classifier"
+    description: "Dialect identification model"
+    tags:
+      task:     "dialect-classification"
+      dialects: "casablanci,marrakchi,fassi,rbati,souss"
+
+# =============================================================================
+# MLflow Project Entry Points
+# =============================================================================
+entry_points:
+
+  train_whisper:
+    command: >
+      python ml/training/train_whisper.py --config {config}
+    parameters:
+      config:
+        type: str
+        default: ml/training/configs/whisper_small.yaml
+
+  evaluate_asr:
+    command: >
+      python ml/evaluation/evaluate_asr.py
+        --model-path {model_path}
+        --test-manifest {test_manifest}
+        --output-dir {output_dir}
+    parameters:
+      model_path:
+        type: str
+        default: ml/experiments/tracking/whisper-small-darija
+      test_manifest:
+        type: str
+        default: data/samples/test_manifest.jsonl
+      output_dir:
+        type: str
+        default: data/samples/eval_results
+
+  compute_embeddings:
+    command: >
+      python ml/feature-store/embeddings/compute_embeddings.py
+        --mode {mode}
+        --input-manifest {manifest}
+        --store {store}
+    parameters:
+      mode:     { type: str, default: both }
+      manifest: { type: str }
+      store:    { type: str, default: local }

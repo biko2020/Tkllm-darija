@@ -1,0 +1,48 @@
+[build-system]
+requires      = ["setuptools>=72", "wheel"]
+build-backend = "setuptools.backends.legacy:build"
+
+[project]
+name        = "tkllm-darija-ml"
+version     = "0.1.0"
+description = "ML research and model development for Moroccan Darija ASR"
+authors     = [{ name = "Brahim Ait Oufkir", email = "aitoufkirbrahimab@gmail.com" }]
+requires-python = ">=3.12"
+readme      = "README.md"
+license     = { text = "UNLICENSED" }
+
+[project.scripts]
+train-whisper  = "training.train_whisper:main"
+train-wav2vec  = "training.train_wav2vec:main"
+evaluate-asr   = "evaluation.evaluate_asr:main"
+build-features = "feature_store.build:main"
+
+[tool.setuptools.packages.find]
+where = ["."]
+
+# ── Ruff ──────────────────────────────────────────────────────────────────────
+[tool.ruff]
+line-length    = 100
+target-version = "py312"
+src            = ["training", "evaluation", "feature_store"]
+
+[tool.ruff.lint]
+select  = ["E", "F", "W", "I", "N", "UP", "ANN", "S", "B", "C4", "PT"]
+ignore  = ["ANN101", "ANN102", "S101", "S603"]
+
+# ── Black ─────────────────────────────────────────────────────────────────────
+[tool.black]
+line-length    = 100
+target-version = ["py312"]
+
+# ── Mypy ──────────────────────────────────────────────────────────────────────
+[tool.mypy]
+python_version         = "3.12"
+strict                 = true
+ignore_missing_imports = true
+
+# ── Pytest ────────────────────────────────────────────────────────────────────
+[tool.pytest.ini_options]
+testpaths       = ["evaluation/tests", "training/tests"]
+addopts         = "-v --cov=training --cov=evaluation --cov-report=term-missing"
+filterwarnings  = ["ignore::DeprecationWarning", "ignore::UserWarning"]

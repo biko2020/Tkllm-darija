@@ -1,0 +1,64 @@
+# =============================================================================
+# Whisper Small — Dev / Staging Training Config
+# ml/training/configs/whisper_small.yaml
+#
+# Best for: CPU or single T4 GPU. ~4 hours on g4dn.xlarge.
+# Expected WER improvement: baseline ~55% → fine-tuned ~25-35%
+# =============================================================================
+
+# Model
+model_name_or_path: "openai/whisper-small"
+language:           "arabic"
+task:               "transcribe"
+
+# Data
+dataset_path:       "../data/versions/v1"
+train_split:        "train"
+eval_split:         "validation"
+test_split:         "test"
+audio_column:       "audio"
+text_column:        "transcript"
+sampling_rate:      16000
+max_input_length:   30.0
+max_train_samples:  null    # null = use all data
+max_eval_samples:   500
+
+# Training
+output_dir:                     "../ml/experiments/tracking/whisper-small-darija"
+num_train_epochs:               10
+per_device_train_batch_size:    16
+per_device_eval_batch_size:     8
+gradient_accumulation_steps:    2       # effective batch = 32
+learning_rate:                  1.0e-5
+warmup_steps:                   500
+weight_decay:                   0.01
+max_grad_norm:                  1.0
+fp16:                           true
+bf16:                           false
+dataloader_num_workers:         4
+
+# Evaluation
+eval_strategy:           "epoch"
+save_strategy:           "epoch"
+load_best_model_at_end:  true
+metric_for_best_model:   "wer"
+greater_is_better:       false
+early_stopping_patience: 3
+
+# Generation
+predict_with_generate:  true
+generation_max_length:  225
+num_beams:              5
+
+# Logging
+logging_steps:   25
+report_to:       ["mlflow"]
+run_name:        "whisper-small-darija-v1"
+
+# MLflow
+mlflow_tracking_uri:    "http://localhost:5000"
+mlflow_experiment_name: "tkllm-darija-asr"
+
+# W&B (optional)
+wandb_project: "tkllm-darija"
+wandb_entity:  ""

@@ -1,0 +1,65 @@
+# =============================================================================
+# Whisper Large-v3 — Production Training Config
+# ml/training/configs/whisper_large.yaml
+#
+# Requires: A10G/A100 GPU (>=24 GB VRAM) or multi-GPU setup.
+# ~24-48 hours on a single A100-80GB.
+# Expected WER: fine-tuned ~12-18% on Moroccan Darija.
+# =============================================================================
+
+# Model
+model_name_or_path: "openai/whisper-large-v3"
+language:           "arabic"
+task:               "transcribe"
+
+# Data
+dataset_path:       "../data/versions/v2"
+train_split:        "train"
+eval_split:         "validation"
+test_split:         "test"
+audio_column:       "audio"
+text_column:        "transcript"
+sampling_rate:      16000
+max_input_length:   30.0
+max_train_samples:  null
+max_eval_samples:   1000
+
+# Training
+output_dir:                     "../ml/experiments/tracking/whisper-large-darija"
+num_train_epochs:               8
+per_device_train_batch_size:    8       # A100-80GB
+per_device_eval_batch_size:     4
+gradient_accumulation_steps:    4       # effective batch = 32
+learning_rate:                  5.0e-6  # lower LR for large model
+warmup_steps:                   1000
+weight_decay:                   0.01
+max_grad_norm:                  1.0
+fp16:                           false
+bf16:                           true    # bfloat16 preferred for A100
+dataloader_num_workers:         8
+
+# Evaluation
+eval_strategy:           "epoch"
+save_strategy:           "epoch"
+load_best_model_at_end:  true
+metric_for_best_model:   "wer"
+greater_is_better:       false
+early_stopping_patience: 3
+
+# Generation
+predict_with_generate:  true
+generation_max_length:  225
+num_beams:              5
+
+# Logging
+logging_steps:   50
+report_to:       ["mlflow", "wandb"]
+run_name:        "whisper-large-v3-darija-v2"
+
+# MLflow
+mlflow_tracking_uri:    "http://mlflow:5000"
+mlflow_experiment_name: "tkllm-darija-asr"
+
+# W&B
+wandb_project: "tkllm-darija"
+wandb_entity:  "tkllm-team"

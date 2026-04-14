@@ -1,0 +1,185 @@
+# =============================================================================
+# Experiment Run Configurations
+# ml/experiments/tracking/experiment_config.yaml
+#
+# Canonical list of experiment runs for reproducibility.
+# Each entry maps to an MLflow run with pinned hyperparameters.
+# Run with:
+#   python ml/training/train_whisper.py \
+#     --config ml/training/configs/whisper_small.yaml
+# =============================================================================
+
+runs:
+
+  # ── Baseline (no fine-tuning) ──────────────────────────────────────────────
+  - run_id:          "baseline-whisper-tiny"
+    experiment:      "tkllm-darija-asr"
+    description:     "Off-the-shelf Whisper tiny — no fine-tuning"
+    model:           "openai/whisper-tiny"
+    fine_tuned:      false
+    tags:
+      type: baseline
+    results:
+      wer_overall:   0.682
+      cer_overall:   0.341
+      rtf_avg:       0.031
+      eval_hours:    12.4
+      eval_date:     "2024-09-01"
+
+  - run_id:          "baseline-whisper-small"
+    experiment:      "tkllm-darija-asr"
+    description:     "Off-the-shelf Whisper small — no fine-tuning"
+    model:           "openai/whisper-small"
+    fine_tuned:      false
+    tags:
+      type: baseline
+    results:
+      wer_overall:   0.512
+      cer_overall:   0.248
+      rtf_avg:       0.085
+      eval_hours:    12.4
+      eval_date:     "2024-09-01"
+
+  - run_id:          "baseline-whisper-large-v3"
+    experiment:      "tkllm-darija-asr"
+    description:     "Off-the-shelf Whisper large-v3 — no fine-tuning"
+    model:           "openai/whisper-large-v3"
+    fine_tuned:      false
+    tags:
+      type: baseline
+    results:
+      wer_overall:   0.387
+      cer_overall:   0.193
+      rtf_avg:       1.024
+      eval_hours:    12.4
+      eval_date:     "2024-09-01"
+
+  # ── Fine-tuned runs ────────────────────────────────────────────────────────
+  - run_id:          "ft-whisper-small-v1"
+    experiment:      "tkllm-darija-asr"
+    description:     "Whisper small fine-tuned on 150h Darija — epoch 10"
+    model:           "openai/whisper-small"
+    fine_tuned:      true
+    config:          "ml/training/configs/whisper_small.yaml"
+    dataset_version: "v1"
+    dataset_hours:   150.0
+    tags:
+      type:    finetune
+      version: v1
+    hyperparameters:
+      learning_rate:                1.0e-5
+      num_train_epochs:             10
+      per_device_train_batch_size:  16
+      gradient_accumulation_steps:  2
+      warmup_steps:                 500
+    results:
+      wer_overall:         0.312
+      wer_casablanci:      0.285
+      wer_marrakchi:       0.328
+      wer_fassi:           0.341
+      cer_overall:         0.154
+      rtf_avg:             0.089
+      training_hours:      4.2
+      eval_date:           "2024-10-15"
+      best_epoch:          8
+      model_size_mb:       461
+
+  - run_id:          "ft-whisper-small-v2"
+    experiment:      "tkllm-darija-asr"
+    description:     "Whisper small v2 — 300h data, lower LR, domain-balanced sampling"
+    model:           "openai/whisper-small"
+    fine_tuned:      true
+    config:          "ml/training/configs/whisper_small.yaml"
+    dataset_version: "v2"
+    dataset_hours:   300.0
+    tags:
+      type:    finetune
+      version: v2
+    hyperparameters:
+      learning_rate:               5.0e-6
+      num_train_epochs:            12
+      per_device_train_batch_size: 16
+      gradient_accumulation_steps: 2
+      warmup_steps:                1000
+      domain_balanced_sampling:    true
+    results:
+      wer_overall:         0.267
+      wer_casablanci:      0.238
+      wer_marrakchi:       0.271
+      wer_fassi:           0.296
+      wer_general:         0.241
+      wer_healthcare:      0.308
+      wer_banking:         0.289
+      cer_overall:         0.131
+      rtf_avg:             0.091
+      training_hours:      8.1
+      eval_date:           "2024-12-01"
+      best_epoch:          10
+      model_size_mb:       461
+      registered_as:       "whisper-darija-dev"
+      mlflow_stage:        "Staging"
+
+  - run_id:          "ft-whisper-large-v3-v1"
+    experiment:      "tkllm-darija-asr"
+    description:     "Whisper large-v3 fine-tuned — 300h data — production candidate"
+    model:           "openai/whisper-large-v3"
+    fine_tuned:      true
+    config:          "ml/training/configs/whisper_large.yaml"
+    dataset_version: "v2"
+    dataset_hours:   300.0
+    tags:
+      type:    finetune
+      version: v1
+      priority: production-candidate
+    hyperparameters:
+      learning_rate:               5.0e-6
+      num_train_epochs:            8
+      per_device_train_batch_size: 8
+      gradient_accumulation_steps: 4
+      warmup_steps:                1000
+      bf16:                        true
+    results:
+      wer_overall:         0.148
+      wer_casablanci:      0.121
+      wer_marrakchi:       0.156
+      wer_fassi:           0.167
+      wer_general:         0.132
+      wer_healthcare:      0.201
+      wer_banking:         0.174
+      cer_overall:         0.072
+      rtf_avg:             1.031
+      training_hours:      31.4
+      eval_date:           "2025-01-20"
+      best_epoch:          7
+      model_size_mb:       3090
+      registered_as:       "whisper-darija-production"
+      mlflow_stage:        "Production"
+
+# =============================================================================
+# Planned Experiments
+# =============================================================================
+planned:
+
+  - id:          "exp-wav2vec-darija"
+    description: "wav2vec 2.0 XLSR-53 fine-tuned on Darija with KenLM decoder"
+    model:       "facebook/wav2vec2-large-xlsr-53"
+    priority:    high
+    rationale:   "Faster inference than Whisper (RTF < 0.1), better for real-time"
+    dataset_hours_needed: 100
+
+  - id:          "exp-dialect-classifier"
+    description: "5-class dialect classifier (casablanci, marrakchi, fassi, rbati, souss)"
+    model:       "Whisper encoder + linear head"
+    priority:    medium
+    rationale:   "Required for automatic demographic tagging"
+
+  - id:          "exp-quality-scorer-v2"
+    description: "Multi-dimensional quality scorer replacing rule-based system"
+    model:       "audio CNN + text BERT fusion"
+    priority:    medium
+
+  - id:          "exp-darija-lm"
+    description: "Moroccan Darija language model for KenLM ASR decoding"
+    approach:    "3-gram KenLM trained on AtlasIA corpus"
+    priority:    high
+    rationale:   "Expected 15-20% relative WER improvement for wav2vec"

@@ -1,0 +1,83 @@
+# =============================================================================
+# Tkllm-darija ML — Python Requirements
+# ml/requirements.txt
+#
+# Install:
+#   pip install -r ml/requirements.txt
+#   pip install -r ml/requirements.txt --extra-index-url https://download.pytorch.org/whl/cu121
+#
+# Python >= 3.12 required.
+# CUDA 12.1+ required for GPU training (Whisper / wav2vec).
+# =============================================================================
+
+# ── Core ML ───────────────────────────────────────────────────────────────────
+torch==2.3.1
+torchaudio==2.3.1
+transformers==4.44.2
+datasets==2.21.0
+accelerate==0.33.0
+evaluate==0.4.3
+jiwer==3.0.4                    # WER / CER computation
+
+# ── ASR — Whisper ─────────────────────────────────────────────────────────────
+openai-whisper==20231117
+faster-whisper==1.0.3           # CTranslate2-based Whisper (4× faster inference)
+ctranslate2==4.4.0
+
+# ── ASR — wav2vec / SpeechBrain ───────────────────────────────────────────────
+speechbrain==1.0.1
+pyctcdecode==0.5.0              # CTC beam-search decoder with KenLM
+kenlm==0.2.0                    # n-gram language model
+
+# ── Audio processing ──────────────────────────────────────────────────────────
+librosa==0.10.2
+soundfile==0.12.1
+pydub==0.25.1
+webrtcvad==2.0.10               # Voice Activity Detection
+pyannote.audio==3.3.1           # Speaker diarisation
+noisereduce==3.0.2              # Audio denoising
+
+# ── NLP / Darija text processing ─────────────────────────────────────────────
+camel-tools==1.5.4              # Arabic NLP toolkit (CAMeL Lab)
+qalsadi==0.3.8                  # Arabic morphological analyser
+farasa==0.0.2                   # Arabic segmenter / POS tagger
+pyarabic==0.6.15                # Arabic text utilities
+langdetect==1.0.9
+ftfy==6.2.0                     # Fix Unicode text encoding issues
+
+# ── Embeddings & Vector Search ────────────────────────────────────────────────
+sentence-transformers==3.1.0
+faiss-cpu==1.8.0                # swap for faiss-gpu on GPU nodes
+pinecone-client==4.1.0
+weaviate-client==4.7.1
+
+# ── Experiment Tracking ───────────────────────────────────────────────────────
+mlflow==2.15.1
+wandb==0.17.9
+optuna==3.6.1                   # Hyperparameter optimisation
+rich==13.8.1                    # Beautiful terminal output
+
+# ── Data Pipeline ─────────────────────────────────────────────────────────────
+pandas==2.2.2
+pyarrow==17.0.0                 # Parquet I/O
+dvc==3.55.2                     # Dataset versioning
+dvc-s3==3.2.0                   # DVC S3/R2 remote
+boto3==1.35.17                  # AWS S3 client
+fsspec==2024.9.0
+s3fs==2024.9.0
+
+# ── Jupyter ───────────────────────────────────────────────────────────────────
+jupyter==1.1.1
+jupyterlab==4.2.5
+ipywidgets==8.1.5
+matplotlib==3.9.2
+seaborn==0.13.2
+plotly==5.24.1
+tqdm==4.66.5
+
+# ── Code quality ──────────────────────────────────────────────────────────────
+black==24.8.0
+ruff==0.6.5
+mypy==1.11.2
+pytest==8.3.3
+pytest-cov==5.0.0

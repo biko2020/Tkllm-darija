@@ -217,18 +217,37 @@ Tkllm-darija/
 │   └── validators/                                  # Shared validation schemas (Zod)
 │       └── package.json
 │
-├── ml/                                              # ML research & model development
-│   ├── notebooks/                                   # Jupyter notebooks for exploration & analysis
-│   ├── training/                                    # Training scripts & experiment configs
-│   ├── package.json                                 # Python/Conda or Node-based ML orchestration
-│   ├── evaluation/                                  # Benchmark & evaluation scripts
-│   ├── feature-store/                               # Reusable ML features (embeddings, speaker features, normalized text)
-│   │   ├── embeddings/
-│   │   ├── speaker/
-│   │   └── text/
-│   └── experiments/                                 # Experiment tracking (MLflow / Weights & Biases)
-│       ├── tracking/                                # Run configs, metrics, artifact pointers
-│       └── mlflow.yaml                              # or wandb config
+├── ml/                                              # Machine Learning research, training, and experimentation workspace
+│   ├── requirements.txt                             # Python dependencies for ML training and evaluation
+│   ├── pyproject.toml                               # Project configuration (Poetry / dependency management)
+│   │
+│   ├── notebooks/                                   # Jupyter notebooks for interactive exploration and analysis
+│   │   ├── 01_data_exploration.ipynb                # Initial data analysis, statistics, and Darija-specific insights
+│   │   └── 02_asr_baseline.ipynb                    # Baseline ASR model experiments and performance analysis
+│   │
+│   ├── training/                                    # Training scripts and experiment configuration files
+│   │   ├── train_whisper.py                         # Main training script for fine-tuning Whisper models on Darija
+│   │   └── configs/                                 # Hyperparameter and model configuration files
+│   │       ├── whisper_small.yaml                   # Configuration for Whisper Small model
+│   │       └── whisper_large.yaml                   # Configuration for Whisper Large model
+│   │
+│   ├── package.json                                 # Scripts for ML orchestration and tooling (optional Node.js utilities)
+│   │
+│   ├── evaluation/                                  # Model evaluation and benchmarking scripts
+│   │   └── evaluate_asr.py                          # ASR model evaluation (WER, CER, real-time factor, etc.)
+│   │
+│   ├── feature-store/                               # Reusable feature engineering components for Darija
+│   │   ├── embeddings/                              # Embedding generation and storage
+│   │   │   └── compute_embeddings.py
+│   │   ├── speaker/                                 # Speaker identification and diarization features
+│   │   │   └── speaker_features.py
+│   │   └── text/                                    # Text normalization and preprocessing for Darija
+│   │       └── normalize_darija.py
+│   │
+│   └── experiments/                                 # Experiment tracking and versioning (MLflow / Weights & Biases)
+│       ├── mlflow.yaml                              # MLflow tracking server and experiment configuration
+│       └── tracking/                                # Experiment run configurations and metadata
+│           └── experiment_config.yaml               # Default experiment settings and tracking parameters
 │
 ├── data/                                            # Dataset management & versioning
 │   ├── ingestion/                                   # Scripts to pull DODa, DVoice, AtlasIA, etc.
@@ -559,6 +578,7 @@ Tkllm-darija/
 │   └── workflows/                                    # CI/CD pipelines
 ├── README.md
 ├── .gitignore
+├── .gitattributes
 ├──.env.example
 ├──.env
 ├── CONTRIBUTING.md
