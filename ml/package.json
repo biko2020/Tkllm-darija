@@ -1,0 +1,20 @@
+{
+  "name": "tkllm-darija-ml",
+  "version": "0.1.0",
+  "description": "ML orchestration and utilities for Moroccan Darija ASR research (optional Node.js tooling)",
+  "author": "Brahim Ait Oufkir <aitoufkirbrahimab@gmail.com>",
+  "license": "UNLICENSED",
+  "private": true,
+  "scripts": {
+    "lint": "ruff check . && black --check . && mypy .",
+    "format": "black .",
+    "test": "pytest",
+    "train:whisper": "python training/train_whisper.py --config training/configs/whisper_small.yaml",
+    "evaluate:asr": "python evaluation/evaluate_asr.py",
+    "embeddings:audio": "python feature-store/embeddings/compute_embeddings.py --mode audio --input-manifest data/samples/approved_manifest.jsonl --store pinecone",
+    "embeddings:text": "python feature-store/embeddings/compute_embeddings.py --mode text --input-manifest data/samples/approved_manifest.jsonl --store weaviate"
+  },
+  "devDependencies": {
+    "prettier": "^3.2.5"
+  }
+}
