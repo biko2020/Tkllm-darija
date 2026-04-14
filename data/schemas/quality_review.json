@@ -1,0 +1,13 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "QualityReview",
+  "type": "object",
+  "properties": {
+    "reviewer_id": { "type": "string", "description": "Unique reviewer identifier" },
+    "dataset_version": { "type": "string", "description": "Dataset version under review" },
+    "score": { "type": "number", "minimum": 0, "maximum": 1, "description": "Quality score (0–1)" },
+    "comments": { "type": "string", "description": "Reviewer notes" },
+    "timestamp": { "type": "string", "format": "date-time", "description": "Review timestamp" }
+  },
+  "required": ["reviewer_id", "dataset_version", "score", "timestamp"]
+}

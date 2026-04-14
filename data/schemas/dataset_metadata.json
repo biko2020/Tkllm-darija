@@ -1,0 +1,23 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "DatasetMetadata",
+  "type": "object",
+  "properties": {
+    "name": { "type": "string", "description": "Dataset name" },
+    "version": { "type": "string", "description": "Dataset version" },
+    "source": { "type": "string", "description": "Origin of dataset (public, crowdsourced, etc.)" },
+    "license": { "type": "string", "description": "License type (e.g., CC-BY-SA)" },
+    "contributors": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "List of contributors"
+    },
+    "languages": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Languages included"
+    },
+    "created_at": { "type": "string", "format": "date-time", "description": "Creation timestamp" }
+  },
+  "required": ["name", "version", "source", "license", "created_at"]
+}

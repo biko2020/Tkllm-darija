@@ -1,0 +1,13 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "AudioAnnotation",
+  "type": "object",
+  "properties": {
+    "audio_file": { "type": "string", "description": "Path or URI to audio file" },
+    "transcript": { "type": "string", "description": "Text transcription of audio" },
+    "speaker_id": { "type": "string", "description": "Unique speaker identifier" },
+    "language": { "type": "string", "enum": ["darija", "msa"], "description": "Language code" },
+    "confidence": { "type": "number", "minimum": 0, "maximum": 1, "description": "ASR confidence score" }
+  },
+  "required": ["audio_file", "transcript", "language"]
+}
