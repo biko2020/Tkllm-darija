@@ -83,6 +83,18 @@ wandb/
 !data/versions/.dvc/
 /data/versions/.dvc/cache/
 
+# ── Data ingestion ───────────────────────────────────────────────────────────
+/data/ingestion/*.pyc
+/data/ingestion/__pycache__/
+/data/ingestion/config.yaml        # local configs, not committed
+/data/samples/*.*                  # anonymized sample files (keep small test files if needed)
+/data/schemas/*.json               # schema definitions (optional: commit if stable)
+/data/registry/*.yaml              # dataset registry (commit if version-controlled)
+/data/versions/                    # versioned dataset snapshots managed by DVC
+!data/versions/.dvc/               # keep DVC pointers
+/data/versions/.dvc/cache/
+
+
 # ── Docker ───────────────────────────────────────────────────────────────────
 infrastructure/docker/.env   # local override — root .env is the source of truth
 
