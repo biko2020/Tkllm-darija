@@ -25,6 +25,13 @@ for audio streaming and large dataset downloads.
 | `mlflow.tkllm-darija.ma` | EKS ALB hostname | No (internal tool) |
 | `prefect.tkllm-darija.ma` | EKS ALB hostname | No (internal tool) |
 
+## Files
+
+- main.tf: Cloudflare zone, DNS records, and page rules
+- variables.tf: Module input variables
+- outputs.tf: Module outputs
+- README.md: Documentation
+
 ## Usage
 
 ```hcl
@@ -39,9 +46,23 @@ module "cloudflare" {
 }
 ```
 
+## Inputs
+
+- `account_id`: Cloudflare account ID
+- `domain`: Root domain for the Cloudflare zone
+- `dns_records`: Map of DNS record objects (name, type, value, ttl, proxied)
+- `page_rules`: Map of page rule objects (target, actions, priority)
+
 ## Outputs
 
 | Name | Description |
 |---|---|
 | `bucket_names` | List of created R2 bucket names |
 | `dns_record_hostnames` | Map of subdomain → FQDN |
+| `zone_id` | Cloudflare zone ID |
+| `zone_name` | Cloudflare zone name |
+| `dns_record_ids` | Map of DNS record keys to record IDs |
+
+---
+
+This module provisions a Cloudflare zone, DNS records, and page rules for the Tkllm-darija platform. It supports secure, automated DNS and CDN configuration.

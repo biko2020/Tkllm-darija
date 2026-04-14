@@ -142,176 +142,176 @@ Storage & Databases
 
 ```
 Tkllm-darija/
-├── apps/                                              # All deployable applications
-│   ├── mobile/                                        # Flutter contributor app (iOS + Android)
+├── apps/                                             # All deployable applications
+│   ├── mobile/                                       # Flutter contributor app (iOS + Android)
 │   │   ├── lib/
-│   │   │   ├── features/                              # Feature-first structure (auth, tasks, rewards)
-│   │   │   ├── shared/                                # Shared widgets, utilities, constants
+│   │   │   ├── features/                             # Feature-first structure (auth, tasks, rewards)
+│   │   │   ├── shared/                               # Shared widgets, utilities, constants
 │   │   │   └── main.dart
 │   │   ├── assets/
 │   │   └── pubspec.yaml
-│   ├── web-contributor/                               # Next.js — contributor-facing web app
+│   ├── web-contributor/                              # Next.js — contributor-facing web app
 │   │   ├── .env
 │   │   ├── .env.example
 │   │   ├── components/
 │   │   └── package.json
-│   ├── web-b2b/                                       # Next.js — enterprise portal & admin dashboard
+│   ├── web-b2b/                                      # Next.js — enterprise portal & admin dashboard
 │   │   ├── .env
 │   │   ├── .env.example
 │   │   ├── app/
 │   │   ├── components/
 │   │   └── package.json
-│   └── api/                                           # NestJS — main application API (REST + GraphQL)
+│   └── api/                                          # NestJS — main application API (REST + GraphQL)
 │       ├── .env
 │       ├── .env.example
 │       ├── package.json
 │       ├── src/
-│       │   ├── modules/                               # user, task, data, quality, auth
-│       │   ├── common/                                # guards, interceptors, filters, pipes
+│       │   ├── modules/                              # user, task, data, quality, auth
+│       │   ├── common/                               # guards, interceptors, filters, pipes
 │       │   ├── config/
 │       │   └── main.ts
-│       ├── prisma/                                    # Schema & migrations
+│       ├── prisma/                                   # Schema & migrations
 │       └── Dockerfile
 │
-├── services/                                          # Standalone background services & workers
-│   ├── asr-worker/                                    # Whisper / wav2vec transcription worker
+├── services/                                         # Standalone background services & workers
+│   ├── asr-worker/                                   # Whisper / wav2vec transcription worker
 │   │   ├── .env
 │   │   ├── .env.example
 │   │   ├── package.json
 │   │   ├── src/
 │   │   ├── models/
 │   │   └── Dockerfile
-│   ├── data-pipeline/                                 # ETL jobs (Prefect / Dagster)
+│   ├── data-pipeline/                                # ETL jobs (Prefect / Dagster)
 │   │   ├── .env
 │   │   ├── .env.example
 │   │   ├── package.json
 │   │   ├── flows/
 │   │   └── Dockerfile
-│   ├── quality-engine/                                # Scoring, validation & active learning
+│   ├── quality-engine/                               # Scoring, validation & active learning
 │   │   ├── .env
 │   │   ├── .env.example
 │   │   ├── package.json
 │   │   ├── src/
 │   │   └── Dockerfile
-│   ├── analytics-service/                            # Contributor activity, data quality & growth metrics
+│   ├── analytics-service/                           # Contributor activity, data quality & growth metrics
 │   │   ├── .env
 │   │   ├── .env.example
 │   │   ├── package.json
 │   │   ├── src/
 │   │   └── Dockerfile
-│   └── financial-service/                            # Payouts, wallet system, fraud detection
+│   └── financial-service/                           # Payouts, wallet system, fraud detection
 │       ├── .env
 │       ├── .env.example
 │       ├── package.json
 │       ├── src/
-│       │   ├── providers/                            # CMI, Orange Money, Inwi Money adapters
-│       │   ├── wallet/                               # Contributor wallet & balance management
-│       │   └── fraud/                                # Fraud detection rules & monitoring
+│       │   ├── providers/                           # CMI, Orange Money, Inwi Money adapters
+│       │   ├── wallet/                              # Contributor wallet & balance management
+│       │   └── fraud/                               # Fraud detection rules & monitoring
 │       └── Dockerfile
 │
-├── packages/                                         # Shared internal libraries (monorepo)
-│   ├── types/                                        # Shared TypeScript types & interfaces
+├── packages/                                        # Shared internal libraries (monorepo)
+│   ├── types/                                       # Shared TypeScript types & interfaces
 │   │   └── package.json
-│   ├── ui/                                           # Shared design system components
+│   ├── ui/                                          # Shared design system components
 │   │   └── package.json
-│   └── validators/                                   # Shared validation schemas (Zod)
+│   └── validators/                                  # Shared validation schemas (Zod)
 │       └── package.json
 │
-├── ml/                                               # ML research & model development
-│   ├── notebooks/                                    # Jupyter notebooks for exploration & analysis
-│   ├── training/                                     # Training scripts & experiment configs
-│   ├── package.json                                  # Python/Conda or Node-based ML orchestration
-│   ├── evaluation/                                   # Benchmark & evaluation scripts
-│   ├── feature-store/                                # Reusable ML features (embeddings, speaker features, normalized text)
+├── ml/                                              # ML research & model development
+│   ├── notebooks/                                   # Jupyter notebooks for exploration & analysis
+│   ├── training/                                    # Training scripts & experiment configs
+│   ├── package.json                                 # Python/Conda or Node-based ML orchestration
+│   ├── evaluation/                                  # Benchmark & evaluation scripts
+│   ├── feature-store/                               # Reusable ML features (embeddings, speaker features, normalized text)
 │   │   ├── embeddings/
 │   │   ├── speaker/
 │   │   └── text/
-│   └── experiments/                                  # Experiment tracking (MLflow / Weights & Biases)
-│       ├── tracking/                                 # Run configs, metrics, artifact pointers
-│       └── mlflow.yaml                               # or wandb config
+│   └── experiments/                                 # Experiment tracking (MLflow / Weights & Biases)
+│       ├── tracking/                                # Run configs, metrics, artifact pointers
+│       └── mlflow.yaml                              # or wandb config
 │
-├── data/                                             # Dataset management & versioning
-│   ├── ingestion/                                    # Scripts to pull DODa, DVoice, AtlasIA, etc.
-│   ├── schemas/                                      # Annotation schemas & data contracts
-│   ├── samples/                                      # Anonymized samples for dev & testing
-│   ├── registry/                                     # Dataset versions, metadata & lineage tracking
-│   │   ├── datasets.yaml                             # Central registry of all published datasets
-│   │   └── lineage/                                  # Provenance records per dataset version
-│   └── versions/                                     # Versioned dataset snapshots (DVC / LakeFS managed)
+├── data/                                            # Dataset management & versioning
+│   ├── ingestion/                                   # Scripts to pull DODa, DVoice, AtlasIA, etc.
+│   ├── schemas/                                     # Annotation schemas & data contracts
+│   ├── samples/                                     # Anonymized samples for dev & testing
+│   ├── registry/                                    # Dataset versions, metadata & lineage tracking
+│   │   ├── datasets.yaml                            # Central registry of all published datasets
+│   │   └── lineage/                                 # Provenance records per dataset version
+│   └── versions/                                    # Versioned dataset snapshots (DVC / LakeFS managed)
 │       ├── v1/
 │       ├── v2/
-│       └── .dvc/                                     # DVC cache & remote pointers
+│       └── .dvc/                                    # DVC cache & remote pointers
 │
 ├── infrastructure/
-│   ├── terraform/                                    # Infrastructure-as-Code using Terraform (AWS)
-│   │   ├── backend.tf                                # Remote state backend configuration (S3 + DynamoDB)
-│   │   ├── main.tf                                   # Root entry point - calls shared config and environment-specific modules
-│   │   ├── outputs.tf                                # Root-level outputs (cluster endpoint, database URLs, bucket names, etc.)
-│   │   ├── providers.tf                              # AWS provider configuration (can be moved to shared/ later)
-│   │   ├── terraform.tfvars.example                  # Example variable file (never commit real values)
-│   │   ├── variables.tf                              # Global input variables (project_name, region, environment, etc.)
-│   │   ├── versions.tf                               # Terraform and provider version constraints
+│   ├── terraform/                                   # Infrastructure-as-Code using Terraform (AWS)
+│   │   ├── backend.tf                               # Remote state backend configuration (S3 + DynamoDB)
+│   │   ├── main.tf                                  # Root entry point - calls shared config and environment-specific modules
+│   │   ├── outputs.tf                               # Root-level outputs (cluster endpoint, database URLs, bucket names, etc.)
+│   │   ├── providers.tf                             # AWS provider configuration (can be moved to shared/ later)
+│   │   ├── terraform.tfvars.example                 # Example variable file (never commit real values)
+│   │   ├── variables.tf                             # Global input variables (project_name, region, environment, etc.)
+│   │   ├── versions.tf                              # Terraform and provider version constraints
 │   │   │
-│   │   ├── modules/                                  # Reusable Terraform modules (core building blocks of the infrastructure)
+│   │   ├── modules/                                 # Reusable Terraform modules (core building blocks of the infrastructure)
 │   │   │   ├── vpc/
-│   │   │   │   ├── main.tf                           # Main VPC configuration (subnets, route tables, Internet Gateway, NAT Gateways)
-│   │   │   │   ├── variables.tf                      # Input variables for VPC (CIDR, AZs, environment, etc.)
-│   │   │   │   ├── outputs.tf                        # VPC ID, subnet IDs, NAT Gateway IDs, and other useful outputs
-│   │   │   │   └── README.md                         # Module documentation and usage examples
-│   │   │   │
-│   │   │   ├── eks/
-│   │   │   │   ├── main.tf                           # EKS cluster, node groups (including GPU nodes for ASR), and addons
-│   │   │   │   ├── variables.tf                      # EKS-specific variables (cluster version, node size, GPU settings, etc.)
-│   │   │   │   ├── outputs.tf                        # EKS cluster endpoint, security group IDs, OIDC provider, etc.
-│   │   │   │   └── README.md                         # EKS module documentation
+│   │   │   │   ├── main.tf                          # Main VPC configuration (subnets, route tables, Internet Gateway, NAT Gateways)
+│   │   │   │   ├── variables.tf                     # Input variables for VPC (CIDR, AZs, environment, etc.)
+│   │   │   │   ├── outputs.tf                       # VPC ID, subnet IDs, NAT Gateway IDs, and other useful outputs
+│   │   │   │   └── README.md                        # Module documentation and usage examples
 │   │   │   │
 │   │   │   ├── iam/
-│   │   │   │   ├── main.tf                           # IAM roles, policies, and IRSA (IAM Roles for Service Accounts) setup
-│   │   │   │   ├── variables.tf                      # Variables for IAM role configuration
-│   │   │   │   ├── outputs.tf                        # Output IAM role ARNs for EKS, S3, Secrets Manager, etc.
-│   │   │   │   └── README.md                         # IAM module documentation
+│   │   │   │   ├── main.tf                          # IAM roles, policies, and IRSA (IAM Roles for Service Accounts) setup
+│   │   │   │   ├── variables.tf                     # Variables for IAM role configuration
+│   │   │   │   ├── outputs.tf                       # Output IAM role ARNs for EKS, S3, Secrets Manager, etc.
+│   │   │   │   └── README.md                        # IAM module documentation
+│   │   │   │
+│   │   │   ├── eks/
+│   │   │   │   ├── main.tf                          # EKS cluster, node groups (including GPU nodes for ASR), and addons
+│   │   │   │   ├── variables.tf                     # EKS-specific variables (cluster version, node size, GPU settings, etc.)
+│   │   │   │   ├── outputs.tf                       # EKS cluster endpoint, security group IDs, OIDC provider, etc.
+│   │   │   │   └── README.md                        # EKS module documentation
+│   │   │   │
+│   │   │   ├── ecr/                                 # ECR repositories for Docker images (API, workers, etc.)
+│   │   │   │   ├── main.tf                          # Creates and configures ECR repositories for API, ASR worker, data-pipeline, other services
+│   │   │   │   ├── variables.tf                     # Input variables for repository names, image scanning, lifecycle policies,encryption settings
+│   │   │   │   ├── outputs.tf                       # Outputs repository URLs, ARNs, and repository names for use in CI/CD pipelines
+│   │   │   │   └── README.md                        # Documentation for the ECR module
 │   │   │   │
 │   │   │   ├── rds/
-│   │   │   │   ├── main.tf
-│   │   │   │   ├── variables.tf
-│   │   │   │   ├── outputs.tf
-│   │   │   │   └── README.md
+│   │   │   │   ├── main.tf                          # RDS PostgreSQL instance with TimescaleDB extension
+│   │   │   │   ├── variables.tf                     # Database configuration variables (instance class, storage, multi-AZ, etc.)
+│   │   │   │   ├── outputs.tf                       # Database endpoint, connection string, security group ID
+│   │   │   │   └── README.md                        # RDS module documentation
 │   │   │   │
-│   │   │   ├── elasticache/                         # Redis (AWS ElastiCache)
-│   │   │   │   ├── main.tf
-│   │   │   │   ├── variables.tf
-│   │   │   │   ├── outputs.tf
-│   │   │   │   └── README.md
+│   │   │   ├── elasticache/                         # Redis cluster via AWS ElastiCache
+│   │   │   │   ├── main.tf                          # ElastiCache Redis cluster and replication group configuration
+│   │   │   │   ├── variables.tf                     # Redis settings (node type, engine version, replication, etc.)
+│   │   │   │   ├── outputs.tf                       # Redis endpoint and connection details
+│   │   │   │   └── README.md                        # ElastiCache module documentation
 │   │   │   │
-│   │   │   ├── msk/                                 # Kafka (AWS Managed Streaming for Kafka)
-│   │   │   │   ├── main.tf
-│   │   │   │   ├── variables.tf
-│   │   │   │   ├── outputs.tf
-│   │   │   │   └── README.md
+│   │   │   ├── msk/                                 # Kafka cluster via Amazon MSK
+│   │   │   │   ├── main.tf                          # MSK cluster, broker configuration, and security settings
+│   │   │   │   ├── variables.tf                     # Kafka configuration variables
+│   │   │   │   ├── outputs.tf                       # Bootstrap brokers and MSK connection details
+│   │   │   │   └── README.md                        # MSK (Kafka) module documentation
 │   │   │   │
 │   │   │   ├── s3/
-│   │   │   │   ├── main.tf
-│   │   │   │   ├── variables.tf
-│   │   │   │   ├── outputs.tf
-│   │   │   │   └── README.md
-│   │   │   │
-│   │   │   ├── ecr/
-│   │   │   │   ├── main.tf
-│   │   │   │   ├── variables.tf
-│   │   │   │   ├── outputs.tf
-│   │   │   │   └── README.md
-│   │   │   │
-│   │   │   ├── cloudflare/
-│   │   │   │   ├── main.tf
-│   │   │   │   ├── variables.tf
-│   │   │   │   ├── outputs.tf
-│   │   │   │   └── README.md
+│   │   │   │   ├── main.tf                          # S3 buckets for audio, datasets, models, exports, and backups
+│   │   │   │   ├── variables.tf                     # Bucket configuration and lifecycle policies
+│   │   │   │   ├── outputs.tf                       # Bucket names and ARNs
+│   │   │   │   └── README.md                        # S3 module documentation
 │   │   │   │
 │   │   │   ├── ssm/
-│   │   │   │   ├── main.tf
-│   │   │   │   ├── variables.tf
-│   │   │   │   ├── outputs.tf
-│   │   │   │   └── README.md
+│   │   │   │   ├── main.tf                          # Manages AWS Systems Manager (SSM) Parameter Store resources 
+│   │   │   │   ├── variables.tf                     # Input variables for SSM parameters (naming convention, parameter types, and values)
+│   │   │   │   ├── outputs.tf                       # Outputs SSM parameter ARNs and names for use in other modules
+│   │   │   │   └── README.md                        # Documentation for the SSM module (usage, parameter hierarchy, and security recommendations)
+│   │   │   │
+│   │   │   ├── cloudflare/
+│   │   │   │   ├── main.tf                          # Configures Cloudflare resources (DNS records, zones, SSL/TLS settings, and page rules)
+│   │   │   │   ├── variables.tf                     # Variables for Cloudflare zone, domain, DNS records, and security settings
+│   │   │   │   ├── outputs.tf                       # Outputs Cloudflare zone ID, DNS record details, and other useful values
+│   │   │   │   └── README.md                        # Documentation for the Cloudflare module (DNS management and CDN configuration)
 │   │   │   │
 │   │   │   └── monitoring/                          # CloudWatch alarms, log groups, and SNS topics for alerting
 │   │   │       ├── main.tf                          # Creates CloudWatch metric alarms, log groups,SNS topics for monitoring and notifications	
@@ -341,11 +341,11 @@ Tkllm-darija/
 │   │   │   │   └── backend.tf                       # Remote state backend configuration for the staging environment.
 │   │   │   │
 │   │   │   └── prod/
-│   │   │       ├── main.tf                            # Orchestrates all Terraform modules with production-grade
-│   │   │       ├── variables.tf                       # Variable definitions specific to the production environment
-│   │   │       ├── terraform.tfvars                   # Production values (larger resources,stricter security)
-│   │   │       ├── outputs.tf                         # Production environment outputs
-│   │   │       └── backend.tf                         # Remote state backend configuration
+│   │   │       ├── main.tf                          # Orchestrates all Terraform modules with production-grade
+│   │   │       ├── variables.tf                     # Variable definitions specific to the production environment
+│   │   │       ├── terraform.tfvars                 # Production values (larger resources,stricter security)
+│   │   │       ├── outputs.tf                       # Production environment outputs
+│   │   │       └── backend.tf                       # Remote state backend configuration
 │   │   │
 │   │   └── scripts/                                 # Helper scripts for common Terraform workflows
 │   │       ├── init.sh                              # Wrapper for terraform init

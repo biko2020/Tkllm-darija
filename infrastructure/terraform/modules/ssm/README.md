@@ -61,9 +61,46 @@ module "ssm" {
 }
 ```
 
+## Files
+
+- main.tf: SSM parameters
+- variables.tf: Module input variables
+- outputs.tf: Module outputs
+- README.md: Documentation
+
+## Usage
+
+```
+module "ssm" {
+  source      = "../../modules/ssm"
+  name_prefix = var.name_prefix
+  parameters  = {
+    db_password = {
+      type        = "SecureString"
+      value       = var.db_password
+      description = "Database password"
+    }
+    api_key = {
+      type        = "SecureString"
+      value       = var.api_key
+      description = "API key for external service"
+    }
+  }
+  tags = var.tags
+}
+```
+
+## Inputs
+
+- `name_prefix`: Prefix for SSM parameter names
+- `parameters`: Map of parameter names to objects with type, value, and description
+- `tags`: Tags to apply to SSM parameters
+
 ## Outputs
 
-| Name | Description |
-|---|---|
-| `parameter_prefix` | SSM path prefix `/tkllm-darija/{env}` |
-| `parameter_names` | List of all managed parameter names |
+- `parameter_names`: Map of logical parameter names to SSM parameter names
+- `parameter_arns`: Map of logical parameter names to SSM parameter ARNs
+
+---
+
+This module provisions AWS SSM Parameter Store parameters for the Tkllm-darija platform. It supports secure, hierarchical parameter management.

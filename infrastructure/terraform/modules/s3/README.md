@@ -35,6 +35,8 @@ module "s3" {
 
 | Name | Description |
 |---|---|
+| `bucket_names` | Map of logical bucket names to actual S3 bucket names |
+| `bucket_arns` | Map of logical bucket names to S3 bucket ARNs |
 | `tfstate_bucket_name` | Terraform state bucket name |
 | `backups_bucket_name` | Backup bucket name |
 | `tfstate_bucket_arn` | State bucket ARN |
