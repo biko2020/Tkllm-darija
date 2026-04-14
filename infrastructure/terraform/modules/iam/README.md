@@ -34,6 +34,15 @@ module "iam" {
 }
 ```
 
+## Inputs
+
+| Name | Description | Type | Default | Required |
+|---|---|---|---|---|
+| `environment` | Environment name (dev, staging, prod) | string | - | yes |
+| `name_prefix` | Resource name prefix | string | - | yes |
+| `tags` | Resource tags | map | - | yes |
+| `oidc_provider` | OIDC provider URL for service account roles (without https://) | string | - | yes |
+
 ## Outputs
 
 | Name | Description |

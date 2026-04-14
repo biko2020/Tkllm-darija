@@ -260,16 +260,16 @@ Tkllm-darija/
 │   │   │   │   └── README.md                         # Module documentation and usage examples
 │   │   │   │
 │   │   │   ├── eks/
-│   │   │   │   ├── main.tf
-│   │   │   │   ├── variables.tf
-│   │   │   │   ├── outputs.tf
-│   │   │   │   └── README.md
+│   │   │   │   ├── main.tf                           # EKS cluster, node groups (including GPU nodes for ASR), and addons
+│   │   │   │   ├── variables.tf                      # EKS-specific variables (cluster version, node size, GPU settings, etc.)
+│   │   │   │   ├── outputs.tf                        # EKS cluster endpoint, security group IDs, OIDC provider, etc.
+│   │   │   │   └── README.md                         # EKS module documentation
 │   │   │   │
-│   │   │   ├── iam/                                   # IAM roles, policies, and IRSA (IAM Roles for Service Accounts)
-│   │   │   │   ├── main.tf                            # IAM roles for EKS, S3 access, Secrets Manager, etc.
-│   │   │   │   ├── variables.tf
-│   │   │   │   ├── outputs.tf                         # Output IAM role ARNs
-│   │   │   │   └── README.md                          # IAM module documentation
+│   │   │   ├── iam/
+│   │   │   │   ├── main.tf                           # IAM roles, policies, and IRSA (IAM Roles for Service Accounts) setup
+│   │   │   │   ├── variables.tf                      # Variables for IAM role configuration
+│   │   │   │   ├── outputs.tf                        # Output IAM role ARNs for EKS, S3, Secrets Manager, etc.
+│   │   │   │   └── README.md                         # IAM module documentation
 │   │   │   │
 │   │   │   ├── rds/
 │   │   │   │   ├── main.tf
