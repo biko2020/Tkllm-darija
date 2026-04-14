@@ -252,11 +252,11 @@ Tkllm-darija/
 │   │   ├── variables.tf                              # Global input variables (project_name, region, environment, etc.)
 │   │   ├── versions.tf                               # Terraform and provider version constraints
 │   │   │
-│   │   ├── modules/                                  # Reusable Terraform modules
+│   │   ├── modules/                                  # Reusable Terraform modules (core building blocks of the infrastructure)
 │   │   │   ├── vpc/
-│   │   │   │   ├── main.tf
-│   │   │   │   ├── variables.tf
-│   │   │   │   ├── outputs.tf
+│   │   │   │   ├── main.tf                           # Main VPC configuration (subnets, route tables, Internet Gateway, NAT Gateways)
+│   │   │   │   ├── variables.tf                      # Input variables for VPC (CIDR, AZs, environment, etc.)
+│   │   │   │   ├── outputs.tf                        # VPC ID, subnet IDs, NAT Gateway IDs, and other useful outputs
 │   │   │   │   └── README.md                         # Module documentation and usage examples
 │   │   │   │
 │   │   │   ├── eks/
