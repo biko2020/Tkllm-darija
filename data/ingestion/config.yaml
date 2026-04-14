@@ -1,0 +1,62 @@
+# config.yaml — Data Ingestion Pipeline Configuration
+
+# Global settings
+project_name: "tkllm-darija"
+default_output_dir: "../versions/v1/raw"
+log_level: "INFO"
+
+# Dataset sources
+datasets:
+  doda:
+    url: "https://example.com/doda.zip"   # Replace with actual source
+    format: "zip"
+    output_dir: "../versions/v1/doda"
+    license: "CC-BY-SA"
+    enabled: true
+
+  dvoice:
+    url: "https://example.com/dvoice.tar.gz"
+    format: "tar.gz"
+    output_dir: "../versions/v1/dvoice"
+    license: "CC-BY-SA"
+    enabled: true
+
+  atlasia:
+    url: "https://example.com/atlasia.json"
+    format: "json"
+    output_dir: "../versions/v1/atlasia"
+    license: "CC-BY-NC"
+    enabled: true
+
+# Audio processing parameters
+audio:
+  sample_rate: 16000
+  max_duration_seconds: 30
+  min_duration_seconds: 1
+  normalize_volume: true
+  target_format: "wav"
+
+# Text processing parameters
+text:
+  normalize_arabizi: true
+  normalize_arabic_script: true
+  remove_punctuation: true
+  lowercase: true
+
+# Quality filtering thresholds
+quality:
+  min_confidence: 0.85
+  max_noise_level: 0.2
+  reviewer_required: true
+
+# Train/dev/test split ratios
+split:
+  train: 0.8
+  dev: 0.1
+  test: 0.1
+
+# Metadata options
+metadata:
+  include_speaker_info: true
+  include_region: true
+  include_accent: true

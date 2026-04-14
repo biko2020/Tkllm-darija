@@ -249,17 +249,34 @@ Tkllm-darija/
 │       └── tracking/                                # Experiment run configurations and metadata
 │           └── experiment_config.yaml               # Default experiment settings and tracking parameters
 │
-├── data/                                            # Dataset management & versioning
-│   ├── ingestion/                                   # Scripts to pull DODa, DVoice, AtlasIA, etc.
-│   ├── schemas/                                     # Annotation schemas & data contracts
-│   ├── samples/                                     # Anonymized samples for dev & testing
-│   ├── registry/                                    # Dataset versions, metadata & lineage tracking
-│   │   ├── datasets.yaml                            # Central registry of all published datasets
-│   │   └── lineage/                                 # Provenance records per dataset version
-│   └── versions/                                    # Versioned dataset snapshots (DVC / LakeFS managed)
-│       ├── v1/
-│       ├── v2/
-│       └── .dvc/                                    # DVC cache & remote pointers
+├── data/                                            # Dataset management, versioning, and ingestion pipeline
+│   ├── ingestion/                                   # Scripts to ingest and process public and internal Darija datasets
+│   │   ├── README.md
+│   │   ├── doda_ingest.py                           # Ingestor for DODa dataset
+│   │   ├── dvoice_ingest.py                         # Ingestor for DVoice speech corpus
+│   │   ├── atlasia_ingest.py                        # Ingestor for AtlasIA resources
+│   │   ├── config.yaml                              # Configuration for sources, paths, and processing
+│   │   └── common.py                                # Shared utilities for data downloading, cleaning, and preprocessing
+│   │
+│   ├── schemas/                                     # Data contracts and annotation schemas
+│   │   ├── audio_annotation.json                    # JSON Schema for audio + transcription annotation format
+│   │   ├── quality_review.json                      # Schema for quality scoring and human review metadata
+│   │   └── dataset_metadata.json                    # Standard metadata schema for all published datasets
+│   │
+│   ├── samples/                                     # Anonymized sample files for development and testing
+│   │   ├── audio_samples/                           # Sample audio clips in Darija
+│   │   ├── transcripts/                             # Corresponding transcription samples
+│   │   └── metadata.json                            # Sample metadata for testing pipelines
+│   │
+│   ├── registry/                                    # Central registry and lineage tracking for datasets
+│   │   ├── datasets.yaml                            # Central registry of all published datasets with version information
+│   │   └── lineage/                                 # Provenance and lineage records for each dataset version
+│   │       └── v1.yaml                              # Lineage metadata for version 1 (source, transformations, contributors, etc.)
+│   │
+│   └── versions/                                    # Versioned dataset snapshots (managed by DVC)
+│       ├── v1/                                      # Version 1 snapshot (initial public datasets)
+│       ├── v2/                                      # Version 2 snapshot (with additional cleaned/annotated data)
+│       └── .dvc/                                    # DVC cache directory and remote pointers (tracks dataset versions)
 │
 ├── infrastructure/
 │   ├── terraform/                                   # Infrastructure-as-Code using Terraform (AWS)
@@ -452,130 +469,131 @@ Tkllm-darija/
 │   │   │   │       └── service.yaml                 # ClusterIP Service exposing the financial service
 │   │   │   │       
 │   │   │   │
-│   │   │   └── ingress/                              # External access configuration
-│   │   │       └── ingress.yaml                      # NGINX ingress with TLS (cert-manager / Let's Encrypt)
+│   │   │   └── ingress/                             # External access configuration
+│   │   │       └── ingress.yaml                     # NGINX ingress with TLS (cert-manager / Let's Encrypt)
 │   │   │   
 │   │   │   
 │   │   │
-│   │   ├── overlays/                                 # Environment-specific overrides and customizations
-│   │   │   ├── dev/                                  # Development environment (local / testing)
-│   │   │   │   ├── kustomization.yaml                # Extends base + applies dev-specific patches
-│   │   │   │   ├── patch-configmap.yaml              # 
-│   │   │   │   ├── patch-image.yaml                  # Use dev/latest image tags
+│   │   ├── overlays/                                # Environment-specific overrides and customizations
+│   │   │   ├── dev/                                 # Development environment (local / testing)
+│   │   │   │   ├── kustomization.yaml               # Extends base + applies dev-specific patches
+│   │   │   │   ├── patch-configmap.yaml             # 
+│   │   │   │   ├── patch-image.yaml                 # Use dev/latest image tags
 │   │   │   │   ├── patch-replicas.yaml
-│   │   │   │   ├── patch-resources.yaml              # Lower CPU/memory limits for dev
+│   │   │   │   ├── patch-resources.yaml             # Lower CPU/memory limits for dev
 │   │   │   │   ├── patch-secrets.yaml
-│   │   │   │   └── keda/                             # Optional autoscaling config for development
+│   │   │   │   └── keda/                            # Optional autoscaling config for development
 │   │   │   │       └── scaledobject-dev.yaml  
 │   │   │   │   
-│   │   │   ├── staging/                              # Pre-production environment
-│   │   │   │   ├── kustomization.yaml                # Extends base with staging configs
+│   │   │   ├── staging/                             # Pre-production environment
+│   │   │   │   ├── kustomization.yaml               # Extends base with staging configs
 │   │   │   │   ├── patch-configmap.yaml 
 │   │   │   │   ├── patch-resources.yaml 
-│   │   │   │   └── patch-replicas.yaml               # Adjust replica counts for staging validation
+│   │   │   │   └── patch-replicas.yaml              # Adjust replica counts for staging validation
 │   │   │   │ 
-│   │   │   └── prod/                                 # Production environment
-│   │   │       ├── kustomization.yaml                # Extends base with production-ready configs
+│   │   │   └── prod/                                # Production environment
+│   │   │       ├── kustomization.yaml               # Extends base with production-ready configs
 │   │   │       ├── patch-configmap.yaml 
-│   │   │       ├── patch-resources.yaml              # Higher resource limits and stricter constraints
-│   │   │       ├── patch-hpa.yaml                    # Production autoscaling rules
-│   │   │       └── network-policies/                 # Enhanced security rules (restricted traffic)
+│   │   │       ├── patch-resources.yaml             # Higher resource limits and stricter constraints
+│   │   │       ├── patch-hpa.yaml                   # Production autoscaling rules
+│   │   │       └── network-policies/                # Enhanced security rules (restricted traffic)
 │   │   │           ├── egress-api.yaml
 │   │   │           ├── egress-financial.yaml
 │   │   │           └── ingress-strict.yaml 
 │   │   │     
-│   │   └── components/                               # Reusable Kustomize components (advanced DRY configuration)
-│   │       ├── kustomization.yaml                    # Root Kustomize file that aggregates all reusable components
+│   │   └── components/                              # Reusable Kustomize components (advanced DRY configuration)
+│   │       ├── kustomization.yaml                   # Root Kustomize file that aggregates all reusable components
 │   │       │
-│   │       ├── common-limits/                        # Common resource limits and requests for containers, pods, and PVCs
-│   │       │   ├── kustomization.yaml                # Kustomize config to export the common limits component
-│   │       │   └── common-limits.yaml                # LimitRange definition (default/min/max requests & limits for CPU, memory, storage)
+│   │       ├── common-limits/                       # Common resource limits and requests for containers, pods, and PVCs
+│   │       │   ├── kustomization.yaml               # Kustomize config to export the common limits component
+│   │       │   └── common-limits.yaml               # LimitRange definition (default/min/max requests & limits for CPU, memory, storage)
 │   │       │
-│   │       ├── quota-dev/                            # ResourceQuota tailored for development environment (relaxed limits)
-│   │       │   ├── kustomization.yaml                # Kustomize config for dev quota component
-│   │       │   └── quota.yaml                        # ResourceQuota for dev (compute, GPU, storage, and object counts)
+│   │       ├── quota-dev/                           # ResourceQuota tailored for development environment (relaxed limits)
+│   │       │   ├── kustomization.yaml               # Kustomize config for dev quota component
+│   │       │   └── quota.yaml                       # ResourceQuota for dev (compute, GPU, storage, and object counts)
 │   │       │
-│   │       ├── quota-staging/                        # ResourceQuota tailored for staging environment
-│   │       │   ├── kustomization.yaml                # Kustomize config for staging quota component
-│   │       │   └── quota.yaml                        # ResourceQuota for staging (moderate limits)
+│   │       ├── quota-staging/                       # ResourceQuota tailored for staging environment
+│   │       │   ├── kustomization.yaml               # Kustomize config for staging quota component
+│   │       │   └── quota.yaml                       # ResourceQuota for staging (moderate limits)
 │   │       │
-│   │       ├── quota-prod/                           # ResourceQuota tailored for production environment (strict + high availability)
-│   │       │   ├── kustomization.yaml                # Kustomize config for production quota component
-│   │       │   └── quota.yaml                        # ResourceQuota for prod (compute, GPU, storage, services, and pods)
+│   │       ├── quota-prod/                          # ResourceQuota tailored for production environment (strict + high availability)
+│   │       │   ├── kustomization.yaml               # Kustomize config for production quota component
+│   │       │   └── quota.yaml                       # ResourceQuota for prod (compute, GPU, storage, services, and pods)
 │   │       │
-│   │       └── pod-security/                         # Pod Security Standards and security policies
-│   │           ├── kustomization.yaml                # Kustomize config to export pod security policies
-│   │           └── pod-security.yaml                 # PodSecurityPolicy / Pod Security Admission configuration (restricted, baseline, privileged)
+│   │       └── pod-security/                        # Pod Security Standards and security policies
+│   │           ├── kustomization.yaml               # Kustomize config to export pod security policies
+│   │           └── pod-security.yaml                # PodSecurityPolicy / Pod Security Admission configuration (restricted, baseline, privileged)
 │   │
-│   ├── docker/                                       # Local development environment
-│   │   ├── docker-compose.yml                        # Main local stack (PostgreSQL, Redis, MinIO, Kafka, MailHog, pgAdmin, etc.)
-│   │   ├── .env                                      # Local environment variables
-│   │   ├── .env.example                              # Template for all environment variables
+│   ├── docker/                                      # Local development environment
+│   │   ├── docker-compose.yml                       # Main local stack (PostgreSQL, Redis, MinIO, Kafka, MailHog, pgAdmin, etc.)
+│   │   ├── .env                                     # Local environment variables
+│   │   ├── .env.example                             # Template for all environment variables
 │   │   │
-│   │   ├── init-scripts/                             # Initialization scripts executed automatically on container startup
+│   │   ├── init-scripts/                            # Initialization scripts executed automatically on container startup
 │   │   │   ├── postgres/
-│   │   │   │   └── 01_extensions.sql                 # Enables pg_trgm, uuid-ossp, pgcrypto, TimescaleDB, etc.
+│   │   │   │   └── 01_extensions.sql                # Enables pg_trgm, uuid-ossp, pgcrypto, TimescaleDB, etc.
 │   │   │   │
 │   │   │   └── pgadmin/
-│   │   │       └── servers.json                      # Pre-configures pgAdmin to connect to local DB
+│   │   │       └── servers.json                     # Pre-configures pgAdmin to connect to local DB
 │   │   │
 │   │   ├── minio/
-│   │   │   └── buckets.json                          # Auto-creates buckets on startup (tkllm-audio, tkllm-datasets, etc.)
+│   │   │   └── buckets.json                         # Auto-creates buckets on startup (tkllm-audio, tkllm-datasets, etc.)
 │   │   │
-│   │   └── nginx/                                    # Optional local reverse proxy configuration
-│   │       ├── nginx.conf                            # Main NGINX configuration file for local routing and SSL termination
-│   │       ├── docker-compose.nginx.yml              # Additional Docker Compose override file for NGINX service
-│   │       └── README.md                             # Instructions on how to enable and use the local NGINX proxy   
+│   │   └── nginx/                                   # Optional local reverse proxy configuration
+│   │       ├── nginx.conf                           # Main NGINX configuration file for local routing and SSL termination
+│   │       ├── docker-compose.nginx.yml             # Additional Docker Compose override file for NGINX service
+│   │       └── README.md                            # Instructions on how to enable and use the local NGINX proxy   
 │   │
-│   ├── monitoring/                                   # Observability stack configuration (Prometheus + Grafana)
+│   ├── monitoring/                                  # Observability stack configuration (Prometheus + Grafana)
 │   │   ├── prometheus/
-│   │   │   ├── prometheus.yml                        # Scraping configuration for all services
+│   │   │   ├── prometheus.yml                       # Scraping configuration for all services
 │   │   │   │
-│   │   │   └── rules/                                # Prometheus alerting and recording rules
-│   │   │       ├── api.yml                           # Alerting rules for the main NestJS API (error rates, latency, request volume, etc.)
-│   │   │       ├── infrastructure.yml                # Rules for core infrastructure (Postgres, Redis, Kafka, MinIO health & performance)
-│   │   │       ├── ml.yml                            # Rules for ML/ASR worker (transcription queue depth, model inference latency, GPU utilization)
-│   │   │       ├── financial.yml                     # Rules for financial service (payment success rate, payout failures, fraud detection alerts)
-│   │   │       └── slo.yml                           # Service Level Objective (SLO) rules and burn rate calculations for reliability monitoring
+│   │   │   └── rules/                               # Prometheus alerting and recording rules
+│   │   │       ├── api.yml                          # Alerting rules for the main NestJS API (error rates, latency, request volume, etc.)
+│   │   │       ├── infrastructure.yml               # Rules for core infrastructure (Postgres, Redis, Kafka, MinIO health & performance)
+│   │   │       ├── ml.yml                           # Rules for ML/ASR worker (transcription queue depth, model inference latency, GPU utilization)
+│   │   │       ├── financial.yml                    # Rules for financial service (payment success rate, payout failures, fraud detection alerts)
+│   │   │       └── slo.yml                          # Service Level Objective (SLO) rules and burn rate calculations for reliability monitoring
 │   │   │
 │   │   └── grafana/
-│   │       ├── provisioning/                         # Auto-provisioning configuration (applied on Grafana startup)
+│   │       ├── provisioning/                        # Auto-provisioning configuration (applied on Grafana startup)
 │   │       │   ├── datasources/
-│   │       │   │   └── prometheus.yml                # Data source configuration that automatically connects Grafana to Prometheus
+│   │       │   │   └── prometheus.yml               # Data source configuration that automatically connects Grafana to Prometheus
 │   │       │   │
 │   │       │   └── dashboards/
-│   │       │       └── default.yml                   # Dashboard provisioning manifest - defines which dashboards to load automatically
+│   │       │       └── default.yml                  # Dashboard provisioning manifest - defines which dashboards to load automatically
 │   │       │
-│   │       └── dashboards/                           # Actual Grafana dashboard definitions (JSON files)
-│   │           ├── api-overview.json                 # Main dashboard for NestJS API metrics (requests, latency, errors, throughput)
-│   │           ├── infrastructure.json               # Infrastructure overview (PostgreSQL, Redis, Kafka, MinIO health and performance)
-│   │           ├── ml-pipeline.json                  # ML & ASR pipeline dashboard (transcription jobs, GPU usage, model latency, queue depth)
-│   │           └── business.json                     # Business & financial metrics (contributor activity, payouts, data quality, growth KPIs)
+│   │       └── dashboards/                          # Actual Grafana dashboard definitions (JSON files)
+│   │           ├── api-overview.json                # Main dashboard for NestJS API metrics (requests, latency, errors, throughput)
+│   │           ├── infrastructure.json              # Infrastructure overview (PostgreSQL, Redis, Kafka, MinIO health and performance)
+│   │           ├── ml-pipeline.json                 # ML & ASR pipeline dashboard (transcription jobs, GPU usage, model latency, queue depth)
+│   │           └── business.json                    # Business & financial metrics (contributor activity, payouts, data quality, growth KPIs)
 │   │
-│   ├── messaging/                                    # Async communication & event-driven setup
+│   ├── messaging/                                   # Async communication & event-driven setup
 │   │   ├── kafka/
-│   │   │   ├── topics.yml                            # Definition of all Kafka topics
-│   │   │   └── consumer-groups.yml                   # Consumer group configurations
+│   │   │   ├── topics.yml                           # Definition of all Kafka topics
+│   │   │   └── consumer-groups.yml                  # Consumer group configurations
 │   │   │
-│   │   └── queues/                                   # Job queue definitions (BullMQ / Redis-based queues)
-│   │       └── schemas/                              # JSON schemas for queue job payloads (used for validation and documentation)
-│   │           ├── audio-upload.schema.json          # Schema for audio upload jobs (file metadata, contributor info, etc.)
-│   │           ├── quality-review.schema.json        # Schema for data quality review and validation tasks
-│   │           └── transcription.schema.json         # Schema for speech-to-text transcription jobs (audio reference, model settings, etc.)
+│   │   └── queues/                                  # Job queue definitions (BullMQ / Redis-based queues)
+│   │       └── schemas/                             # JSON schemas for queue job payloads (used for validation and documentation)
+│   │           ├── audio-upload.schema.json         # Schema for audio upload jobs (file metadata, contributor info, etc.)
+│   │           ├── quality-review.schema.json       # Schema for data quality review and validation tasks
+│   │           └── transcription.schema.json        # Schema for speech-to-text transcription jobs (audio reference, model settings, etc.)
 │   │
-│   └── scripts/                                      # Infrastructure-related helper scripts
-│        ├── db-reset.sh                              # Reset and clean the local PostgreSQL database (drops and recreates schema + runs migrations)
-│        ├── health-check.sh                          # Perform health checks on all local services (API, Postgres, Redis, Kafka, MinIO, etc.)
-│        ├── k8s-deploy.sh                            # Deploy Kubernetes resources using Kustomize (supports dev/staging/prod environments)
-│        ├── rotate-secrets.sh                        # Rotate sensitive secrets and regenerate environment-specific credentials
-│        ├── seed-kafka-topics.sh                     # Create and configure all required Kafka topics with proper partitions and replication
-│        ├── seed-minio-buckets.sh                    # Create and configure all necessary MinIO/S3 buckets with correct policies
-│        └── setup-local.sh                           # One-command setup for local environment 
+│   └── scripts/                                     # Infrastructure-related helper scripts
+│        ├── db-reset.sh                             # Reset and clean the local PostgreSQL database (drops and recreates schema + runs migrations)
+│        ├── health-check.sh                         # Perform health checks on all local services (API, Postgres, Redis, Kafka, MinIO, etc.)
+│        ├── k8s-deploy.sh                           # Deploy Kubernetes resources using Kustomize (supports dev/staging/prod environments)
+│        ├── rotate-secrets.sh                       # Rotate sensitive secrets and regenerate environment-specific credentials
+│        ├── seed-kafka-topics.sh                    # Create and configure all required Kafka topics with proper partitions and replication
+│        ├── seed-minio-buckets.sh                   # Create and configure all necessary MinIO/S3 buckets with correct policies
+│        └── setup-local.sh                          # One-command setup for local environment 
 │
-├── docs/                                             # Architecture decisions, API docs, guides
-├── scripts/                                          # Dev utilities & automation
+├── docs/                                            # Architecture decisions, API docs, guides
+├── scripts/                                         # Dev utilities & automation
 ├── .github/
-│   └── workflows/                                    # CI/CD pipelines
+│   └── workflows/                                   # CI/CD pipelines
+│        └── ml.yml    
 ├── README.md
 ├── .gitignore
 ├── .gitattributes
@@ -642,6 +660,70 @@ cd apps/api && npm run start:dev
 ```
 
 See [`docs/local-setup.md`](docs/local-setup.md) for detailed instructions, environment variable configuration, and database seeding.
+
+---
+
+## 🤖 ML Workspace Setup (`ml/`)
+
+The `ml/` directory contains all Machine Learning research, training, and experiment code for ASR and NLP.
+
+### ML Prerequisites
+
+| Requirement | Version |
+|---|---|
+| Python | 3.12+ |
+| CUDA | 12.1+ (for GPU training) |
+| Node.js | 20+ (for optional tooling) |
+
+### 1. Install Python Dependencies
+
+```bash
+cd ml
+python -m pip install --upgrade pip
+pip install -r requirements.txt
+# For GPU: pip install -r requirements.txt --extra-index-url https://download.pytorch.org/whl/cu121
+```
+
+### 2. (Optional) Install Node.js Tooling
+
+For code formatting and orchestration scripts:
+
+```bash
+cd ml
+npm install
+# Run Prettier
+npx prettier --check .
+```
+
+### 3. Run ML Scripts
+
+Common scripts are defined in `ml/package.json`:
+
+```bash
+# Lint, format, and type-check Python code
+npm run lint
+
+# Run all tests
+npm test
+
+# Train Whisper model
+npm run train:whisper
+
+# Evaluate ASR model
+npm run evaluate:asr
+
+# Compute audio/text embeddings
+npm run embeddings:audio
+npm run embeddings:text
+```
+
+### 4. ML CI/CD
+
+ML code is automatically linted, tested, and trained on every push/PR via GitHub Actions:
+
+- See `.github/workflows/ml.yml` for details.
+
+---
 
 ---
 
