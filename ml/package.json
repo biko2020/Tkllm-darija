@@ -1,20 +1,87 @@
 {
-  "name": "tkllm-darija-ml",
+  "name": "@tkllm/ml",
   "version": "0.1.0",
-  "description": "ML orchestration and utilities for Moroccan Darija ASR research (optional Node.js tooling)",
-  "author": "Brahim Ait Oufkir <aitoufkirbrahimab@gmail.com>",
-  "license": "UNLICENSED",
   "private": true,
+  "description": "ML research and model development — Moroccan Darija ASR, quality scoring, embeddings",
+
   "scripts": {
-    "lint": "ruff check . && black --check . && mypy .",
-    "format": "black .",
-    "test": "pytest",
-    "train:whisper": "python training/train_whisper.py --config training/configs/whisper_small.yaml",
-    "evaluate:asr": "python evaluation/evaluate_asr.py",
-    "embeddings:audio": "python feature-store/embeddings/compute_embeddings.py --mode audio --input-manifest data/samples/approved_manifest.jsonl --store pinecone",
-    "embeddings:text": "python feature-store/embeddings/compute_embeddings.py --mode text --input-manifest data/samples/approved_manifest.jsonl --store weaviate"
+
+    "//── Setup ────────────────────────────────────────────────────────────": "",
+    "install:python":   "pip install -r requirements.txt --break-system-packages",
+    "install:python:gpu":"pip install -r requirements.txt --extra-index-url https://download.pytorch.org/whl/cu121 --break-system-packages",
+    "setup":            "npm run install:python && npm run dvc:pull",
+    "check:gpu":        "python -c \"import torch; print('CUDA:', torch.cuda.is_available(), '| GPU:', torch.cuda.get_device_name(0) if torch.cuda.is_available() else 'none')\"",
+    "check:env":        "python -c \"import transformers, faster_whisper, mlflow, datasets; print('All ML deps OK')\"",
+
+    "//── Notebooks ───────────────────────────────────────────────────────": "",
+    "notebook":         "jupyter lab --notebook-dir=notebooks --port=8888 --no-browser",
+    "notebook:run:all": "jupyter nbconvert --to notebook --execute notebooks/*.ipynb --output-dir notebooks/executed/",
+    "notebook:clean":   "jupyter nbconvert --ClearOutputPreprocessor.enabled=True --inplace notebooks/*.ipynb",
+    "notebook:export":  "jupyter nbconvert --to html notebooks/*.ipynb --output-dir notebooks/html/",
+
+    "//── Training ────────────────────────────────────────────────────────": "",
+    "train:whisper:small": "python training/train_whisper.py --config training/configs/whisper_small.yaml",
+    "train:whisper:large": "python training/train_whisper.py --config training/configs/whisper_large.yaml",
+    "train:dry-run":       "python training/train_whisper.py --config training/configs/whisper_small.yaml --dry-run",
+    "train:resume":        "python training/train_whisper.py --config training/configs/whisper_small.yaml --resume",
+
+    "//── Evaluation ──────────────────────────────────────────────────────": "",
+    "eval:asr":         "python evaluation/evaluate_asr.py --model-path experiments/tracking/whisper-small-darija --test-manifest ../data/samples/test_manifest.jsonl --output-dir ../data/samples/eval_results",
+    "eval:asr:prod":    "python evaluation/evaluate_asr.py --model-path experiments/tracking/whisper-large-darija --test-manifest ../data/samples/test_manifest.jsonl --output-dir ../data/samples/eval_results/prod --beam-size 5",
+    "eval:baseline":    "python evaluation/evaluate_asr.py --model-path openai/whisper-small --test-manifest ../data/samples/test_manifest.jsonl --output-dir ../data/samples/eval_results/baseline",
+
+    "//── Feature Store ───────────────────────────────────────────────────": "",
+    "features:embeddings":        "python feature-store/embeddings/compute_embeddings.py --mode both --input-manifest ../data/samples/approved_manifest.jsonl --store local",
+    "features:embeddings:pinecone":"python feature-store/embeddings/compute_embeddings.py --mode both --input-manifest ../data/samples/approved_manifest.jsonl --store pinecone",
+    "features:speaker":           "python feature-store/speaker/speaker_features.py --diarise --embed",
+    "features:normalize":         "python feature-store/text/normalize_darija.py",
+    "features:normalize:batch":   "python feature-store/text/normalize_darija.py --input-file ../data/samples/transcripts.jsonl",
+
+    "//── MLflow ──────────────────────────────────────────────────────────": "",
+    "mlflow:server":    "mlflow server --backend-store-uri postgresql://${POSTGRES_USER:-tkllm_user}:${POSTGRES_PASSWORD:-tkllm_password}@localhost:5432/tkllm_darija --default-artifact-root s3://tkllm-models/mlflow --host 0.0.0.0 --port 5000",
+    "mlflow:ui":        "mlflow ui --port 5000",
+    "mlflow:open":      "open http://localhost:5000",
+    "mlflow:experiments":"mlflow experiments list",
+
+    "//── DVC ─────────────────────────────────────────────────────────────": "",
+    "dvc:init":         "dvc init --subdir",
+    "dvc:pull":         "dvc pull",
+    "dvc:push":         "dvc push",
+    "dvc:status":       "dvc status",
+    "dvc:repro":        "dvc repro",
+    "dvc:add:data":     "dvc add ../data/versions/",
+    "dvc:dag":          "dvc dag",
+
+    "//── Code quality ────────────────────────────────────────────────────": "",
+    "lint":             "ruff check training/ evaluation/ feature-store/",
+    "lint:fix":         "ruff check --fix training/ evaluation/ feature-store/",
+    "format":           "black training/ evaluation/ feature-store/",
+    "format:check":     "black --check training/ evaluation/ feature-store/",
+    "typecheck":        "mypy training/ evaluation/ feature-store/ --ignore-missing-imports",
+    "test":             "pytest evaluation/tests/ training/tests/ -v --cov",
+    "test:watch":       "pytest-watch evaluation/tests/ training/tests/",
+    "clean":            "find . -type d -name __pycache__ -exec rm -rf {} + 2>/dev/null; find . -name '*.pyc' -delete 2>/dev/null; echo 'cleaned'",
+
+    "//── CI shorthand ────────────────────────────────────────────────────": "",
+    "build":            "echo 'ml: no build step (Python — run npm run check:env)'",
+    "ci":               "npm run format:check && npm run lint && npm run typecheck && npm run test"
   },
-  "devDependencies": {
-    "prettier": "^3.2.5"
-  }
+
+  "engines": {
+    "node": ">=20.0.0"
+  },
+
+  "keywords": [
+    "darija",
+    "moroccan-arabic",
+    "asr",
+    "whisper",
+    "speech-recognition",
+    "nlp",
+    "mlflow",
+    "dvc"
+  ],
+
+  "author": "Brahim Ait Oufkir <aitoufkirbrahimab@gmail.com>",
+  "license": "UNLICENSED"
 }
