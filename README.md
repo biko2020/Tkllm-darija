@@ -256,7 +256,8 @@ Tkllm-darija/
 │   │   ├── dvoice_ingest.py                         # Ingestor for DVoice speech corpus
 │   │   ├── atlasia_ingest.py                        # Ingestor for AtlasIA resources
 │   │   ├── config.yaml                              # Configuration for sources, paths, and processing
-│   │   └── common.py                                # Shared utilities for data downloading, cleaning, and preprocessing
+│   │   ├── common.py                                # Shared utilities for data downloading, cleaning, and preprocessing
+│   │   └── update_summary.py
 │   │
 │   ├── schemas/                                     # Data contracts and annotation schemas
 │   │   ├── audio_annotation.json                    # JSON Schema for audio + transcription annotation format
@@ -264,9 +265,26 @@ Tkllm-darija/
 │   │   └── dataset_metadata.json                    # Standard metadata schema for all published datasets
 │   │
 │   ├── samples/                                     # Anonymized sample files for development and testing
-│   │   ├── audio_samples/                           # Sample audio clips in Darija
-│   │   ├── transcripts/                             # Corresponding transcription samples
-│   │   └── metadata.json                            # Sample metadata for testing pipelines
+│   │   ├── README.md                                # Documentation for sample data usage and structure
+│   │   ├── audio_samples/                           # Short anonymized audio clips in Darija
+│   │   │   ├── sample_001.wav                       # 8-second casual conversation sample (Casablanca accent)
+│   │   │   ├── sample_002.wav                       # 12-second market negotiation sample (Marrakech accent)
+│   │   │   ├── sample_003.wav                       # 6-second medical symptom description
+│   │   │   └── sample_004.wav                       # Code-switched French-Darija example
+│   │   │
+│   │   ├── transcripts/                             # Corresponding gold-standard transcriptions
+│   │   │   ├── sample_001.txt                       # Plain text transcription
+│   │   │   ├── sample_002.txt
+│   │   │   ├── sample_003.txt
+│   │   │   └── sample_004.txt
+│   │   │
+│   │   ├── metadata/                                # Rich metadata for each sample
+│   │   │   ├── sample_001.json                      # Speaker info, region, gender, duration, quality score, etc.
+│   │   │   ├── sample_002.json
+│   │   │   ├── sample_003.json
+│   │   │   └── sample_004.json
+│   │   │
+│   │   └── dataset_summary.json                     # Overview of all samples (total count, accent distribution, domains)
 │   │
 │   ├── registry/                                    # Central registry and lineage tracking for datasets
 │   │   ├── datasets.yaml                            # Central registry of all published datasets with version information

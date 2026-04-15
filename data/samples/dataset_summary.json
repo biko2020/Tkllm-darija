@@ -1,0 +1,26 @@
+{
+  "dataset_name": "Tkllm-darija-samples",
+  "total_samples": 1,
+  "total_duration_seconds": 8.0,
+  "language_breakdown": {
+    "darija": 1,
+    "msa": 0
+  },
+  "accent_distribution": {
+    "Casablanca": 1,
+    "Marrakchi": 0,
+    "Chamali": 0,
+    "Fassi": 0,
+    "Souss": 0
+  },
+  "domains": {
+    "casual_conversation": 1,
+    "market_negotiation": 0,
+    "educational": 0,
+    "news_media": 0,
+    "customer_support": 0,
+    "medical": 0,
+    "code_switching": 0
+  },
+  "quality_average_score": 0.95
+}
