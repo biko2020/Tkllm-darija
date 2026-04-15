@@ -1,6 +1,6 @@
 {
   "audio_file": "data/samples/audio_samples/sample_001.wav",
-  "transcript": "السلام، كيف داير؟ لاباس عليك؟ كلشي بخير في الدار البيضاء؟",
+  "transcript_file": "transcripts/sample_001.txt",
   "speaker_id": "user_cas_001",
   "language": "darija",
   "confidence": 0.98,

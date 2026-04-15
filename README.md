@@ -257,7 +257,8 @@ Tkllm-darija/
 │   │   ├── atlasia_ingest.py                        # Ingestor for AtlasIA resources
 │   │   ├── config.yaml                              # Configuration for sources, paths, and processing
 │   │   ├── common.py                                # Shared utilities for data downloading, cleaning, and preprocessing
-│   │   └── update_summary.py
+│   │   └── update_summary.py                        # Updates dataset_summary.json and registry metadata after new ingestion or changes 
+│   │                                                  (version tracking, statistics, lineage)
 │   │
 │   ├── schemas/                                     # Data contracts and annotation schemas
 │   │   ├── audio_annotation.json                    # JSON Schema for audio + transcription annotation format
