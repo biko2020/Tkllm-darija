@@ -1,0 +1,46 @@
+# datasets.yaml — Central registry of all published datasets
+
+datasets:
+  tkllm-darija-samples:
+    description: "Anonymized sample dataset for development and testing"
+    versions:
+      v1:
+        path: "data/samples/"
+        lineage: "data/registry/lineage/v1.yaml"
+        license: "CC-BY-SA"
+        created_at: "2026-04-15T18:00:00Z"
+        contributors: ["user_cas_001", "user_mar_002", "user_rbt_003", "user_cas_004"]
+        stats_file: "data/samples/dataset_summary.json"
+
+  doda:
+    description: "Darija Open Dataset (DODa)"
+    versions:
+      v1:
+        path: "data/versions/v1/doda"
+        lineage: "data/registry/lineage/v1.yaml"
+        license: "CC-BY-SA"
+        created_at: "2026-04-15T18:00:00Z"
+        contributors: ["community"]
+        stats_file: "data/versions/v1/doda_summary.json"
+
+  dvoice:
+    description: "DVoice speech corpus"
+    versions:
+      v1:
+        path: "data/versions/v1/dvoice"
+        lineage: "data/registry/lineage/v1.yaml"
+        license: "CC-BY-SA"
+        created_at: "2026-04-15T18:00:00Z"
+        contributors: ["community"]
+        stats_file: "data/versions/v1/dvoice_summary.json"
+
+  atlasia:
+    description: "AtlasIA resources"
+    versions:
+      v1:
+        path: "data/versions/v1/atlasia"
+        lineage: "data/registry/lineage/v1.yaml"
+        license: "CC-BY-NC"
+        created_at: "2026-04-15T18:00:00Z"
+        contributors: ["atlasia-team"]
+        stats_file: "data/versions/v1/atlasia_summary.json"

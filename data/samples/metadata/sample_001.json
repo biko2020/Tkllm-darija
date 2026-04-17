@@ -1,15 +1,16 @@
 {
   "audio_file": "data/samples/audio_samples/sample_001.wav",
-  "transcript_file": "transcripts/sample_001.txt",
+  "transcript_file": "data/samples/transcripts/sample_001.txt",
   "speaker_id": "user_cas_001",
   "language": "darija",
   "confidence": 0.98,
+  "accent": "Casablanca",
+  "domain": "casual_conversation",
+  "duration_seconds": 8.0,
   "metadata": {
     "region": "Casablanca-Settat",
-    "accent": "Casablanca",
     "gender": "male",
     "age_group": "25-35",
-    "environment": "office_quiet",
-    "duration_seconds": 8.0
+    "environment": "office_quiet"
   }
 }

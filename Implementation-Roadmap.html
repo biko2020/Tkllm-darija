@@ -1,0 +1,1108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Tkllm-Darija API — Implementation Roadmap</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Mono:wght@400;500&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet"/>
+<style>
+  :root {
+    --ink: #0d0d0d;
+    --ink2: #3a3a3a;
+    --ink3: #7a7a7a;
+    --paper: #f7f4ef;
+    --paper2: #eeeae3;
+    --paper3: #e4e0d8;
+    --accent: #c8402a;
+    --accent2: #2a5fc8;
+    --accent3: #1a7a4a;
+    --accent4: #8b2ac8;
+    --gold: #b8860b;
+    --rule: rgba(13,13,13,0.12);
+    --r: 6px;
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { font-size: 15px; }
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--paper);
+    color: var(--ink);
+    line-height: 1.7;
+    min-height: 100vh;
+  }
+
+  /* ── HEADER ── */
+  header {
+    background: var(--ink);
+    color: var(--paper);
+    padding: 3rem 2rem 2.5rem;
+    position: relative;
+    overflow: hidden;
+  }
+  header::before {
+    content: '';
+    position: absolute; inset: 0;
+    background: repeating-linear-gradient(
+      90deg,
+      transparent,
+      transparent 39px,
+      rgba(255,255,255,0.03) 39px,
+      rgba(255,255,255,0.03) 40px
+    );
+    pointer-events: none;
+  }
+  .header-inner { max-width: 900px; margin: 0 auto; position: relative; }
+  .project-tag {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    letter-spacing: .12em;
+    text-transform: uppercase;
+    color: rgba(247,244,239,0.45);
+    margin-bottom: 1rem;
+  }
+  h1 {
+    font-family: 'Syne', sans-serif;
+    font-size: clamp(2rem, 5vw, 3.2rem);
+    font-weight: 800;
+    line-height: 1.1;
+    letter-spacing: -.02em;
+    color: var(--paper);
+    margin-bottom: .8rem;
+  }
+  h1 span { color: var(--accent); }
+  .header-sub {
+    font-size: 1rem;
+    color: rgba(247,244,239,0.6);
+    max-width: 600px;
+    font-weight: 300;
+    margin-bottom: 2rem;
+  }
+  .header-meta {
+    display: flex; gap: 2rem; flex-wrap: wrap;
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    color: rgba(247,244,239,0.35);
+    border-top: 1px solid rgba(247,244,239,0.1);
+    padding-top: 1.2rem;
+  }
+  .header-meta span strong { color: rgba(247,244,239,0.7); font-weight: 500; }
+
+  /* ── LAYOUT ── */
+  main { max-width: 900px; margin: 0 auto; padding: 3rem 2rem 5rem; }
+
+  /* ── TOC ── */
+  .toc {
+    background: var(--paper2);
+    border: 1px solid var(--rule);
+    border-radius: var(--r);
+    padding: 1.5rem 2rem;
+    margin-bottom: 3.5rem;
+  }
+  .toc-title {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    letter-spacing: .14em;
+    text-transform: uppercase;
+    color: var(--ink3);
+    margin-bottom: 1rem;
+  }
+  .toc-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: .4rem .8rem;
+  }
+  .toc-item {
+    display: flex; align-items: center; gap: .5rem;
+    font-size: .82rem;
+    color: var(--ink2);
+    text-decoration: none;
+    padding: .3rem .4rem;
+    border-radius: 4px;
+    transition: background .15s, color .15s;
+  }
+  .toc-item:hover { background: var(--paper3); color: var(--ink); }
+  .toc-num {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    color: var(--ink3);
+    min-width: 20px;
+  }
+
+  /* ── PHASE CARDS ── */
+  .phase {
+    margin-bottom: 2.5rem;
+    border: 1px solid var(--rule);
+    border-radius: var(--r);
+    overflow: hidden;
+    page-break-inside: avoid;
+  }
+  .phase-header {
+    display: flex; align-items: center; gap: 1rem;
+    padding: 1.2rem 1.6rem;
+    cursor: pointer;
+    user-select: none;
+    position: relative;
+  }
+  .phase-header::after {
+    content: '▾';
+    position: absolute; right: 1.6rem;
+    font-size: 12px;
+    color: var(--ink3);
+    transition: transform .25s;
+  }
+  .phase.open .phase-header::after { transform: rotate(-180deg); }
+  .phase-num {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: .06em;
+    min-width: 32px;
+    color: var(--paper);
+    background: var(--ink);
+    border-radius: 3px;
+    padding: 2px 6px;
+    text-align: center;
+  }
+  .phase-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 1.1rem;
+    font-weight: 700;
+    letter-spacing: -.01em;
+    color: var(--ink);
+    flex: 1;
+  }
+  .phase-meta {
+    display: flex; gap: .6rem; align-items: center; flex-wrap: wrap;
+  }
+  .tag {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+    padding: 2px 7px;
+    border-radius: 999px;
+    border: 1px solid;
+    white-space: nowrap;
+  }
+  .tag-duration { color: var(--ink3); border-color: var(--rule); background: var(--paper2); }
+
+  /* phase accent colors */
+  .ph-0 .phase-header { background: #f9f6f0; }
+  .ph-0 .phase-num { background: var(--ink); }
+  .ph-1 .phase-header { background: #fff4f2; }
+  .ph-1 .phase-num { background: var(--accent); }
+  .ph-2 .phase-header { background: #f2f6ff; }
+  .ph-2 .phase-num { background: var(--accent2); }
+  .ph-3 .phase-header { background: #f2fff7; }
+  .ph-3 .phase-num { background: var(--accent3); }
+  .ph-4 .phase-header { background: #f9f2ff; }
+  .ph-4 .phase-num { background: var(--accent4); }
+  .ph-5 .phase-header { background: #fffdf0; }
+  .ph-5 .phase-num { background: var(--gold); }
+  .ph-6 .phase-header { background: #f0f9ff; }
+  .ph-6 .phase-num { background: #1a6a9a; }
+  .ph-7 .phase-header { background: #fff0f4; }
+  .ph-7 .phase-num { background: #9a1a3a; }
+
+  .phase-body {
+    display: none;
+    padding: 1.6rem;
+    border-top: 1px solid var(--rule);
+    background: #fff;
+  }
+  .phase.open .phase-body { display: block; }
+
+  /* ── SECTIONS INSIDE PHASE ── */
+  .section { margin-bottom: 1.8rem; }
+  .section:last-child { margin-bottom: 0; }
+  .section-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    letter-spacing: .13em;
+    text-transform: uppercase;
+    color: var(--ink3);
+    border-bottom: 1px solid var(--rule);
+    padding-bottom: .4rem;
+    margin-bottom: .9rem;
+  }
+
+  /* ── TASK LIST ── */
+  .tasks { list-style: none; }
+  .tasks li {
+    display: flex; gap: .7rem;
+    align-items: flex-start;
+    font-size: .88rem;
+    color: var(--ink2);
+    padding: .45rem 0;
+    border-bottom: 1px solid rgba(13,13,13,0.05);
+    line-height: 1.5;
+  }
+  .tasks li:last-child { border-bottom: none; }
+  .tasks li::before {
+    content: '→';
+    color: var(--ink3);
+    font-size: 11px;
+    margin-top: 3px;
+    flex-shrink: 0;
+  }
+  .tasks li strong { color: var(--ink); font-weight: 500; }
+  .tasks li code {
+    font-family: 'DM Mono', monospace;
+    font-size: .78rem;
+    background: var(--paper2);
+    padding: 1px 5px;
+    border-radius: 3px;
+    color: var(--ink);
+  }
+
+  /* ── TECH STACK GRID ── */
+  .stack-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+    gap: .6rem;
+  }
+  .stack-item {
+    background: var(--paper2);
+    border: 1px solid var(--rule);
+    border-radius: var(--r);
+    padding: .7rem .9rem;
+  }
+  .stack-item .stack-name {
+    font-family: 'DM Mono', monospace;
+    font-size: .8rem;
+    font-weight: 500;
+    color: var(--ink);
+    display: block;
+  }
+  .stack-item .stack-role {
+    font-size: .75rem;
+    color: var(--ink3);
+    display: block;
+    margin-top: 2px;
+  }
+
+  /* ── MILESTONE ── */
+  .milestones { display: flex; flex-direction: column; gap: .5rem; }
+  .milestone {
+    display: flex; align-items: center; gap: 1rem;
+    background: var(--paper2);
+    border: 1px solid var(--rule);
+    border-radius: var(--r);
+    padding: .7rem 1rem;
+    font-size: .85rem;
+  }
+  .milestone-icon {
+    width: 28px; height: 28px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 13px;
+    flex-shrink: 0;
+    background: var(--paper3);
+    color: var(--ink);
+    border: 1px solid var(--rule);
+  }
+  .milestone strong { color: var(--ink); font-weight: 500; }
+  .milestone span { color: var(--ink3); }
+
+  /* ── CALLOUT ── */
+  .callout {
+    border-radius: var(--r);
+    padding: .9rem 1.1rem;
+    font-size: .85rem;
+    display: flex; gap: .7rem; align-items: flex-start;
+    margin-top: 1rem;
+  }
+  .callout-warn { background: #fff9e8; border: 1px solid #e8d68a; color: #7a5c00; }
+  .callout-info { background: #eef4ff; border: 1px solid #8ab0e8; color: #1a3d6e; }
+  .callout-ok   { background: #edfff4; border: 1px solid #7acea0; color: #0d4a25; }
+  .callout-icon { font-size: 15px; flex-shrink: 0; margin-top: 1px; }
+
+  /* ── TIMELINE BAR ── */
+  .timeline-wrap { margin-top: 3rem; }
+  .timeline-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 1.3rem;
+    font-weight: 700;
+    letter-spacing: -.01em;
+    margin-bottom: 1.5rem;
+    color: var(--ink);
+  }
+  .timeline {
+    position: relative;
+    padding-left: 0;
+  }
+  .tl-row {
+    display: grid;
+    grid-template-columns: 120px 1fr;
+    gap: 0 1rem;
+    margin-bottom: .5rem;
+    align-items: center;
+  }
+  .tl-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+    color: var(--ink3);
+    text-align: right;
+    padding-right: .8rem;
+    line-height: 1.3;
+  }
+  .tl-bar-wrap {
+    position: relative;
+    height: 28px;
+    display: flex; align-items: center;
+  }
+  .tl-bar {
+    height: 20px;
+    border-radius: 4px;
+    display: flex; align-items: center; padding: 0 8px;
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    letter-spacing: .04em;
+    color: rgba(255,255,255,0.85);
+    white-space: nowrap;
+    overflow: hidden;
+    transition: opacity .2s;
+  }
+  .tl-bar:hover { opacity: .8; }
+  .bar-0  { background: var(--ink);     width: 9%;  }
+  .bar-1  { background: var(--accent);  width: 14%; margin-left: 9%;  }
+  .bar-2  { background: var(--accent2); width: 20%; margin-left: 23%; }
+  .bar-3  { background: var(--accent3); width: 20%; margin-left: 43%; }
+  .bar-4  { background: var(--accent4); width: 16%; margin-left: 63%; }
+  .bar-5  { background: var(--gold);    width: 9%;  margin-left: 79%; }
+  .bar-6  { background: #1a6a9a;        width: 7%;  margin-left: 88%; }
+  .bar-7  { background: #9a1a3a;        width: 5%;  margin-left: 95%; }
+  .tl-axis {
+    display: grid;
+    grid-template-columns: 120px 1fr;
+    gap: 0 1rem;
+    margin-top: .4rem;
+  }
+  .tl-axis-bar {
+    border-top: 1px solid var(--rule);
+    display: flex; justify-content: space-between;
+    padding-top: .3rem;
+    font-family: 'DM Mono', monospace;
+    font-size: 9px;
+    color: var(--ink3);
+    letter-spacing: .06em;
+  }
+
+  /* ── FOOTER ── */
+  footer {
+    background: var(--ink);
+    color: rgba(247,244,239,0.4);
+    text-align: center;
+    padding: 1.5rem 2rem;
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    letter-spacing: .08em;
+  }
+  footer strong { color: rgba(247,244,239,0.7); }
+
+  /* ── PRINT ── */
+  @media print {
+    .phase-body { display: block !important; }
+    .phase-header::after { display: none; }
+    .phase-header { cursor: default; }
+  }
+  @media (max-width: 600px) {
+    .tl-row { grid-template-columns: 80px 1fr; }
+    .tl-label { font-size: 9px; }
+    header { padding: 2rem 1.2rem; }
+    main { padding: 2rem 1.2rem 4rem; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-inner">
+    <div class="project-tag">biko2020 / Tkllm-darija — NestJS API</div>
+    <h1>Implementation<br><span>Roadmap</span></h1>
+    <p class="header-sub">A structured, phase-by-phase guide to building the Tkllm-Darija backend API from the current infrastructure-only state to a production-grade, fully deployed service.</p>
+    <div class="header-meta">
+      <span><strong>8 Phases</strong> — Setup to Delivery</span>
+      <span><strong>~22–26 Weeks</strong> — Estimated Timeline</span>
+      <span><strong>Stack</strong> — NestJS · PostgreSQL · Redis · Kafka · Docker · K8s</span>
+    </div>
+  </div>
+</header>
+
+<main>
+
+  <!-- TABLE OF CONTENTS -->
+  <nav class="toc">
+    <div class="toc-title">Contents</div>
+    <div class="toc-grid">
+      <a class="toc-item" href="#ph0"><span class="toc-num">00</span> Project Setup & Audit</a>
+      <a class="toc-item" href="#ph1"><span class="toc-num">01</span> Core API Foundation</a>
+      <a class="toc-item" href="#ph2"><span class="toc-num">02</span> Auth & User Management</a>
+      <a class="toc-item" href="#ph3"><span class="toc-num">03</span> Data & Task Engine</a>
+      <a class="toc-item" href="#ph4"><span class="toc-num">04</span> ML & Async Services</a>
+      <a class="toc-item" href="#ph5"><span class="toc-num">05</span> Testing & Validation</a>
+      <a class="toc-item" href="#ph6"><span class="toc-num">06</span> Deployment</a>
+      <a class="toc-item" href="#ph7"><span class="toc-num">07</span> Hardening & Delivery</a>
+    </div>
+  </nav>
+
+  <!-- ──────────────────────────────── PHASE 0 ── -->
+  <div class="phase ph-0 open" id="ph0">
+    <div class="phase-header" onclick="toggle(this)">
+      <span class="phase-num">00</span>
+      <span class="phase-title">Project Setup & Codebase Audit</span>
+      <div class="phase-meta">
+        <span class="tag tag-duration">Wk 1–2</span>
+      </div>
+    </div>
+    <div class="phase-body">
+
+      <div class="section">
+        <div class="section-label">Prerequisites — install & verify</div>
+        <div class="stack-grid">
+          <div class="stack-item"><span class="stack-name">Node.js 20+</span><span class="stack-role">Runtime for NestJS</span></div>
+          <div class="stack-item"><span class="stack-name">pnpm / npm</span><span class="stack-role">Package manager</span></div>
+          <div class="stack-item"><span class="stack-name">Docker Desktop</span><span class="stack-role">Local service stack</span></div>
+          <div class="stack-item"><span class="stack-name">Python 3.12+</span><span class="stack-role">ML scripts</span></div>
+          <div class="stack-item"><span class="stack-name">Turborepo</span><span class="stack-role">Monorepo orchestration</span></div>
+          <div class="stack-item"><span class="stack-name">Git + GitHub CLI</span><span class="stack-role">Version control</span></div>
+          <div class="stack-item"><span class="stack-name">Terraform CLI</span><span class="stack-role">Infrastructure provisioning</span></div>
+          <div class="stack-item"><span class="stack-name">kubectl + Helm</span><span class="stack-role">K8s management</span></div>
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="section-label">Audit — what currently exists</div>
+        <ul class="tasks">
+          <li><strong>Verify</strong> all Terraform modules compile cleanly — run <code>terraform validate</code> in each <code>environments/</code> folder.</li>
+          <li><strong>Catalogue</strong> existing Python scripts (<code>data/ingestion/</code>, <code>ml/</code>) and mark which are stubs vs runnable.</li>
+          <li><strong>Confirm</strong> <code>turbo.json</code> and root <code>package.json</code> workspaces are correctly wired.</li>
+          <li><strong>List</strong> all missing directories from the README structure; create empty scaffolds with <code>.gitkeep</code> and a brief <code>README.md</code> in each.</li>
+          <li><strong>Review</strong> <code>.env.example</code> — ensure every required variable is documented before writing any code.</li>
+        </ul>
+      </div>
+
+      <div class="section">
+        <div class="section-label">Scaffold missing app skeletons</div>
+        <ul class="tasks">
+          <li>Bootstrap <code>apps/api</code> with <code>nest new api --strict</code>, configure Turborepo pipeline entry.</li>
+          <li>Create <code>packages/types</code>, <code>packages/validators</code>, <code>packages/ui</code> with minimal <code>index.ts</code> + <code>package.json</code>.</li>
+          <li>Add each service directory (<code>services/asr-worker</code>, etc.) with a <code>README.md</code> describing its expected interface — implementation comes later.</li>
+          <li>Commit scaffold with message convention established: <code>feat(scope): description</code>.</li>
+        </ul>
+      </div>
+
+      <div class="section">
+        <div class="section-label">Milestone</div>
+        <div class="milestones">
+          <div class="milestone"><div class="milestone-icon">✓</div><div><strong>M0</strong> — All directories exist, CI pipeline runs, <code>turbo build</code> completes without errors.</div></div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ──────────────────────────────── PHASE 1 ── -->
+  <div class="phase ph-1" id="ph1">
+    <div class="phase-header" onclick="toggle(this)">
+      <span class="phase-num">01</span>
+      <span class="phase-title">Core API Foundation</span>
+      <div class="phase-meta">
+        <span class="tag tag-duration">Wk 3–6</span>
+      </div>
+    </div>
+    <div class="phase-body">
+
+      <div class="section">
+        <div class="section-label">Technology decisions</div>
+        <div class="stack-grid">
+          <div class="stack-item"><span class="stack-name">NestJS 10</span><span class="stack-role">REST + GraphQL framework</span></div>
+          <div class="stack-item"><span class="stack-name">Prisma ORM</span><span class="stack-role">DB schema & migrations</span></div>
+          <div class="stack-item"><span class="stack-name">PostgreSQL 16</span><span class="stack-role">Primary database</span></div>
+          <div class="stack-item"><span class="stack-name">TimescaleDB</span><span class="stack-role">Time-series analytics</span></div>
+          <div class="stack-item"><span class="stack-name">Redis 7</span><span class="stack-role">Caching + queues</span></div>
+          <div class="stack-item"><span class="stack-name">Apollo GraphQL</span><span class="stack-role">GraphQL layer</span></div>
+          <div class="stack-item"><span class="stack-name">Zod</span><span class="stack-role">Validation (shared pkg)</span></div>
+          <div class="stack-item"><span class="stack-name">class-validator</span><span class="stack-role">DTO validation in Nest</span></div>
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="section-label">Database schema — Prisma setup</div>
+        <ul class="tasks">
+          <li>Define <code>schema.prisma</code> with core models: <code>User</code>, <code>Contributor</code>, <code>Task</code>, <code>DataRecord</code>, <code>QualityReview</code>, <code>Payment</code>.</li>
+          <li>Enable <code>timescaledb</code> extension via <code>prisma/migrations</code> — add a TimescaleDB hypertable for <code>DataRecord</code> with a time column.</li>
+          <li>Configure <code>PostGIS</code> for regional/accent geo-metadata (<code>contributor_location</code> column).</li>
+          <li>Run <code>prisma migrate dev</code> against the local Docker Postgres instance; verify schema.</li>
+          <li>Add a <code>seed.ts</code> with representative fixture data for local development.</li>
+        </ul>
+      </div>
+
+      <div class="section">
+        <div class="section-label">API skeleton — NestJS modules</div>
+        <ul class="tasks">
+          <li>Create core modules: <code>UserModule</code>, <code>AuthModule</code>, <code>TaskModule</code>, <code>DataModule</code>, <code>QualityModule</code>, <code>PaymentModule</code>.</li>
+          <li>Wire a global <code>ConfigModule</code> using <code>@nestjs/config</code> + Joi schema validation for all env vars.</li>
+          <li>Set up <code>PrismaModule</code> as a global provider with connection pooling and health checks.</li>
+          <li>Implement <code>RedisModule</code> using <code>ioredis</code> with a shared connection provider.</li>
+          <li>Add global exception filter (<code>HttpExceptionFilter</code>), logging interceptor, and response transformation interceptor.</li>
+          <li>Expose <code>/health</code> endpoint using <code>@nestjs/terminus</code> — check DB, Redis, and disk.</li>
+        </ul>
+      </div>
+
+      <div class="section">
+        <div class="section-label">GraphQL layer</div>
+        <ul class="tasks">
+          <li>Configure <code>GraphQLModule</code> with code-first approach, auto-schema generation, and playground disabled in production.</li>
+          <li>Define <code>User</code> and <code>Task</code> object types; stub resolvers for all CRUD operations.</li>
+          <li>Add <code>DataLoader</code> pattern (via <code>nestjs-dataloader</code>) to prevent N+1 query issues.</li>
+        </ul>
+      </div>
+
+      <div class="section">
+        <div class="section-label">Docker local stack</div>
+        <ul class="tasks">
+          <li>Complete <code>infrastructure/docker/docker-compose.yml</code> — add PostgreSQL+TimescaleDB, Redis, MinIO, Kafka+Zookeeper, MailHog, pgAdmin.</li>
+          <li>Write <code>infrastructure/docker/init-scripts/postgres/01_extensions.sql</code> to enable all required extensions on startup.</li>
+          <li>Add <code>infrastructure/docker/minio/buckets.json</code> to auto-create <code>tkllm-audio</code>, <code>tkllm-datasets</code>, <code>tkllm-models</code> buckets.</li>
+          <li>Verify <code>infrastructure/scripts/setup-local.sh</code> runs the full stack in one command.</li>
+        </ul>
+      </div>
+
+      <div class="section">
+        <div class="section-label">Milestone</div>
+        <div class="milestones">
+          <div class="milestone"><div class="milestone-icon">✓</div><div><strong>M1</strong> — API starts locally, <code>/health</code> returns green for all services, Prisma migrations run cleanly, GraphQL playground accessible.</div></div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ──────────────────────────────── PHASE 2 ── -->
+  <div class="phase ph-2" id="ph2">
+    <div class="phase-header" onclick="toggle(this)">
+      <span class="phase-num">02</span>
+      <span class="phase-title">Authentication & User Management</span>
+      <div class="phase-meta">
+        <span class="tag tag-duration">Wk 7–9</span>
+      </div>
+    </div>
+    <div class="phase-body">
+
+      <div class="section">
+        <div class="section-label">Auth stack</div>
+        <div class="stack-grid">
+          <div class="stack-item"><span class="stack-name">Supabase Auth</span><span class="stack-role">Primary identity provider</span></div>
+          <div class="stack-item"><span class="stack-name">@nestjs/passport</span><span class="stack-role">Strategy management</span></div>
+          <div class="stack-item"><span class="stack-name">@nestjs/jwt</span><span class="stack-role">JWT generation/validation</span></div>
+          <div class="stack-item"><span class="stack-name">bcrypt</span><span class="stack-role">Password hashing</span></div>
+          <div class="stack-item"><span class="stack-name">Twilio / Africa's Talking</span><span class="stack-role">Moroccan SMS OTP</span></div>
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="section-label">Authentication flows</div>
+        <ul class="tasks">
+          <li>Implement <code>POST /auth/register</code> with phone number (Moroccan +212 format) or email, bcrypt hashed password, and email/SMS verification flow.</li>
+          <li>Implement <code>POST /auth/login</code> returning short-lived access token (15 min) + long-lived refresh token (30 days) stored in Redis.</li>
+          <li>Implement <code>POST /auth/refresh</code> with token rotation — old refresh token invalidated on use.</li>
+          <li>Implement <code>POST /auth/logout</code> — blacklist token in Redis with TTL.</li>
+          <li>Add <code>JwtAuthGuard</code> and <code>RolesGuard</code> decorators; define roles: <code>CONTRIBUTOR</code>, <code>ADMIN</code>, <code>B2B_CLIENT</code>.</li>
+          <li>Implement OTP-based phone verification: generate 6-digit code, store in Redis with 10-min TTL, send via SMS.</li>
+        </ul>
+      </div>
+
+      <div class="section">
+        <div class="section-label">Consent & CNDP compliance (Morocco Law 09-08)</div>
+        <ul class="tasks">
+          <li>Model <code>ConsentRecord</code> in Prisma with category, version, granted_at, revoked_at fields.</li>
+          <li>Implement <code>POST /users/consent</code> — record granular consent per data category (audio, text, metadata, location).</li>
+          <li>Implement <code>DELETE /users/consent/:category</code> — revoke specific category; cascade data anonymization job to BullMQ queue.</li>
+          <li>Add audit log interceptor that records all data access events to a separate audit table.</li>
+        </ul>
+      </div>
+
+      <div class="section">
+        <div class="section-label">Contributor profile management</div>
+        <ul class="tasks">
+          <li>Implement CRUD endpoints for <code>ContributorProfile</code>: region, age group, gender, primary dialect, native language.</li>
+          <li>Add profile completeness scoring — contributors with complete profiles get priority task assignment.</li>
+          <li>Implement <code>GET /users/me</code> with aggregated stats (tasks completed, earnings, quality score).</li>
+        </ul>
+      </div>
+
+      <div class="section">
+        <div class="section-label">Milestone</div>
+        <div class="milestones">
+          <div class="milestone"><div class="milestone-icon">✓</div><div><strong>M2</strong> — Full auth flow tested end-to-end, role-based access working, consent records stored with audit trail, phone OTP functional.</div></div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ──────────────────────────────── PHASE 3 ── -->
+  <div class="phase ph-3" id="ph3">
+    <div class="phase-header" onclick="toggle(this)">
+      <span class="phase-num">03</span>
+      <span class="phase-title">Data Collection, Task Engine & Quality</span>
+      <div class="phase-meta">
+        <span class="tag tag-duration">Wk 10–14</span>
+      </div>
+    </div>
+    <div class="phase-body">
+
+      <div class="section">
+        <div class="section-label">Task engine — core logic</div>
+        <ul class="tasks">
+          <li>Model <code>TaskTemplate</code> (domain, type, prompt content, language, difficulty) and <code>TaskAssignment</code> (contributor, status, assigned_at, submitted_at) in Prisma.</li>
+          <li>Implement contributor matching algorithm: filter by dialect, region, completed task history, and current workload to distribute tasks fairly.</li>
+          <li>Implement <code>GET /tasks/next</code> — return the best matching unassigned task for the authenticated contributor.</li>
+          <li>Implement <code>POST /tasks/:id/submit</code> — accept audio, text, or annotation payload; validate schema; enqueue for quality review.</li>
+          <li>Implement task expiration: BullMQ job that re-assigns tasks after 24h if not submitted.</li>
+        </ul>
+      </div>
+
+      <div class="section">
+        <div class="section-label">Audio upload pipeline</div>
+        <ul class="tasks">
+          <li>Add <code>@nestjs/platform-fastify</code> with <code>fastify-multipart</code> for efficient file upload handling.</li>
+          <li>Validate audio: enforce WAV/MP3/OGG, max 60s duration, min 8kHz sample rate using <code>music-metadata</code>.</li>
+          <li>Upload to MinIO/S3 with server-side AES-256 encryption; store only the object key in the DB.</li>
+          <li>Generate a pre-signed URL (5-min TTL) for playback — never expose raw bucket URLs.</li>
+          <li>Enqueue <code>ASR_TRANSCRIBE</code> job in BullMQ after successful upload.</li>
+        </ul>
+      </div>
+
+      <div class="section">
+        <div class="section-label">Quality engine module</div>
+        <ul class="tasks">
+          <li>Implement multi-stage review: automated checks (audio SNR, duration, encoding) → AI pre-screening → human review queue.</li>
+          <li>Model quality scores (0–100) with breakdown: audio clarity, transcription accuracy, annotation completeness.</li>
+          <li>Implement majority voting for text annotation tasks — require ≥ 3 independent annotations; flag disagreements for senior review.</li>
+          <li>Implement contributor reputation scoring: rolling 30-day average quality score; auto-suspend accounts below threshold 40.</li>
+          <li>Create <code>GET /admin/quality/review-queue</code> for admin review of flagged submissions.</li>
+        </ul>
+      </div>
+
+      <div class="section">
+        <div class="section-label">Data schemas — implement & validate</div>
+        <ul class="tasks">
+          <li>Write <code>data/schemas/audio_annotation.json</code>, <code>quality_review.json</code>, <code>dataset_metadata.json</code> as JSON Schema drafts.</li>
+          <li>Mirror schemas as Zod objects in <code>packages/validators</code> for runtime validation in the API.</li>
+          <li>Write data ingestion scripts: <code>data/ingestion/doda_ingest.py</code>, <code>dvoice_ingest.py</code>, <code>atlasia_ingest.py</code> — download, normalize, and load into PostgreSQL.</li>
+        </ul>
+      </div>
+
+      <div class="section">
+        <div class="section-label">Milestone</div>
+        <div class="milestones">
+          <div class="milestone"><div class="milestone-icon">✓</div><div><strong>M3a</strong> — Task assignment and submission flow working end-to-end with audio upload to MinIO.</div></div>
+          <div class="milestone"><div class="milestone-icon">✓</div><div><strong>M3b</strong> — Quality scoring pipeline running, contributor reputation scores updating after each review.</div></div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ──────────────────────────────── PHASE 4 ── -->
+  <div class="phase ph-4" id="ph4">
+    <div class="phase-header" onclick="toggle(this)">
+      <span class="phase-num">04</span>
+      <span class="phase-title">ML Integration, Async Services & Payments</span>
+      <div class="phase-meta">
+        <span class="tag tag-duration">Wk 15–18</span>
+      </div>
+    </div>
+    <div class="phase-body">
+
+      <div class="section">
+        <div class="section-label">Kafka event bus setup</div>
+        <ul class="tasks">
+          <li>Complete <code>infrastructure/messaging/kafka/topics.yml</code>: define topics <code>audio.uploaded</code>, <code>task.submitted</code>, <code>quality.reviewed</code>, <code>payment.triggered</code>, <code>dataset.published</code>.</li>
+          <li>Register <code>@nestjs/microservices</code> Kafka client in the API; emit domain events on each state transition.</li>
+          <li>Add dead-letter topics (<code>*.dlq</code>) for all production topics; configure retry policy (3 attempts, exponential backoff).</li>
+          <li>Write <code>infrastructure/scripts/seed-kafka-topics.sh</code> to create topics in local and CI environments.</li>
+        </ul>
+      </div>
+
+      <div class="section">
+        <div class="section-label">ASR worker service (<code>services/asr-worker</code>)</div>
+        <ul class="tasks">
+          <li>Set up Python FastAPI service that consumes <code>audio.uploaded</code> Kafka topic.</li>
+          <li>Load Whisper large-v3 model at startup; implement <code>transcribe(audio_url)</code> function with pre-signed S3 download.</li>
+          <li>Return transcription result + confidence score; publish to <code>task.transcribed</code> topic.</li>
+          <li>Containerize with GPU-capable Dockerfile (CUDA 12.1 base image); add <code>KEDA</code> ScaledObject to scale on Kafka lag.</li>
+        </ul>
+      </div>
+
+      <div class="section">
+        <div class="section-label">Data pipeline service (<code>services/data-pipeline</code>)</div>
+        <ul class="tasks">
+          <li>Implement Prefect flows for: dataset export (Parquet / JSONL), dataset versioning via DVC, and dataset registry update.</li>
+          <li>Add <code>data/registry/datasets.yaml</code> and auto-update script <code>data/ingestion/update_summary.py</code>.</li>
+          <li>Implement <code>POST /admin/datasets/export</code> API endpoint that triggers a Prefect flow run.</li>
+        </ul>
+      </div>
+
+      <div class="section">
+        <div class="section-label">Financial service (<code>services/financial-service</code>)</div>
+        <ul class="tasks">
+          <li>Implement contributor wallet model: credits accrued per approved task, real-money conversion on withdrawal request.</li>
+          <li>Implement Orange Money and Inwi Money adapter stubs with a provider interface — use sandbox credentials in dev.</li>
+          <li>Implement payout logic: batch payouts nightly via BullMQ scheduled job; enforce minimum threshold (50 MAD).</li>
+          <li>Implement basic fraud detection rules: velocity checks (>50 submissions/hour), duplicate audio hash detection, IP anomaly flagging.</li>
+          <li>All financial operations must be idempotent — use <code>idempotency_key</code> column in <code>Transaction</code> table.</li>
+        </ul>
+      </div>
+
+      <div class="section">
+        <div class="section-label">Analytics service</div>
+        <ul class="tasks">
+          <li>Implement TimescaleDB continuous aggregates for: daily active contributors, tasks submitted per hour, quality score trends.</li>
+          <li>Expose <code>GET /admin/analytics/dashboard</code> endpoint returning pre-aggregated metrics.</li>
+          <li>Wire Prometheus metrics exporter in the NestJS API (<code>@willsoto/nestjs-prometheus</code>).</li>
+        </ul>
+      </div>
+
+      <div class="section">
+        <div class="section-label">Gamification & rewards</div>
+        <ul class="tasks">
+          <li>Implement streak tracking: Redis sorted sets for daily activity; reset on missed day.</li>
+          <li>Implement leaderboard: Redis sorted set keyed by weekly earnings; <code>GET /leaderboard/weekly</code> returns top 100.</li>
+          <li>Implement achievement badges: stored in JSONB column, awarded via event listeners on task milestones.</li>
+        </ul>
+      </div>
+
+      <div class="section">
+        <div class="section-label">Milestone</div>
+        <div class="milestones">
+          <div class="milestone"><div class="milestone-icon">✓</div><div><strong>M4a</strong> — End-to-end flow: audio uploaded → Kafka event → ASR worker transcribes → result stored → quality reviewed → payment triggered.</div></div>
+          <div class="milestone"><div class="milestone-icon">✓</div><div><strong>M4b</strong> — Payout sandbox working, fraud rules active, leaderboard and streaks updating in real time.</div></div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ──────────────────────────────── PHASE 5 ── -->
+  <div class="phase ph-5" id="ph5">
+    <div class="phase-header" onclick="toggle(this)">
+      <span class="phase-num">05</span>
+      <span class="phase-title">Testing & Validation</span>
+      <div class="phase-meta">
+        <span class="tag tag-duration">Wk 17–20 (parallel)</span>
+      </div>
+    </div>
+    <div class="phase-body">
+
+      <div class="section">
+        <div class="section-label">Testing stack</div>
+        <div class="stack-grid">
+          <div class="stack-item"><span class="stack-name">Jest</span><span class="stack-role">Unit tests (NestJS)</span></div>
+          <div class="stack-item"><span class="stack-name">Supertest</span><span class="stack-role">HTTP integration tests</span></div>
+          <div class="stack-item"><span class="stack-name">Testcontainers</span><span class="stack-role">Real DB/Redis in CI</span></div>
+          <div class="stack-item"><span class="stack-name">pytest</span><span class="stack-role">Python ML tests</span></div>
+          <div class="stack-item"><span class="stack-name">k6</span><span class="stack-role">Load & performance tests</span></div>
+          <div class="stack-item"><span class="stack-name">OWASP ZAP</span><span class="stack-role">Security scanning</span></div>
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="section-label">Unit testing — targets per module</div>
+        <ul class="tasks">
+          <li><strong>AuthService</strong> — token generation, refresh rotation, OTP expiry edge cases, role guard behavior.</li>
+          <li><strong>TaskEngine</strong> — contributor matching algorithm, expiry logic, duplicate submission rejection.</li>
+          <li><strong>QualityEngine</strong> — scoring algorithm correctness, majority vote calculation, reputation threshold enforcement.</li>
+          <li><strong>FinancialService</strong> — wallet arithmetic, idempotency key deduplication, fraud rule triggers.</li>
+          <li>Achieve minimum <strong>80% line coverage</strong>; enforce via CI coverage gate.</li>
+        </ul>
+      </div>
+
+      <div class="section">
+        <div class="section-label">Integration & E2E testing</div>
+        <ul class="tasks">
+          <li>Use <code>Testcontainers</code> to spin up real PostgreSQL and Redis instances in CI — no mocks for DB layer.</li>
+          <li>Write E2E test suite covering the critical path: register → verify phone → get task → submit audio → receive quality score → trigger payout.</li>
+          <li>Test all error paths: invalid file formats, expired tokens, over-quota submissions, duplicate idempotency keys.</li>
+          <li>Write Kafka consumer integration tests using an embedded Kafka broker.</li>
+        </ul>
+      </div>
+
+      <div class="section">
+        <div class="section-label">Load testing with k6</div>
+        <ul class="tasks">
+          <li>Define SLO targets: <code>POST /tasks/:id/submit</code> p95 < 500ms at 200 rps; <code>GET /tasks/next</code> p99 < 200ms.</li>
+          <li>Run ramp test: 0 → 500 virtual users over 5 min; record throughput, error rate, and DB connection pool saturation.</li>
+          <li>Identify and fix top 3 slow queries using <code>EXPLAIN ANALYZE</code>; add missing indexes.</li>
+        </ul>
+      </div>
+
+      <div class="section">
+        <div class="section-label">Security validation</div>
+        <ul class="tasks">
+          <li>Run OWASP ZAP baseline scan against the staging API; remediate all HIGH findings before prod deployment.</li>
+          <li>Manually verify: JWT secret rotation, rate limiting on auth endpoints (max 10 req/min), SQL injection protection via Prisma parameterization, CORS policy.</li>
+          <li>Verify GDPR/CNDP data deletion: trigger consent revocation and confirm audio files deleted from S3, PII pseudonymized in DB within 30 seconds.</li>
+        </ul>
+      </div>
+
+      <div class="section">
+        <div class="section-label">ML evaluation</div>
+        <ul class="tasks">
+          <li>Complete <code>ml/evaluation/evaluate_asr.py</code> — run WER and CER on a held-out Darija test set.</li>
+          <li>Complete <code>ml/experiments/mlflow.yaml</code> and log all experiment runs to MLflow server.</li>
+          <li>Document baseline model performance in <code>docs/ml-baseline.md</code>.</li>
+        </ul>
+      </div>
+
+      <div class="section">
+        <div class="section-label">Milestone</div>
+        <div class="milestones">
+          <div class="milestone"><div class="milestone-icon">✓</div><div><strong>M5</strong> — 80%+ test coverage, all E2E tests green, p95 latency within SLO, zero OWASP HIGH findings.</div></div>
+        </div>
+      </div>
+
+      <div class="callout callout-warn">
+        <span class="callout-icon">⚠</span>
+        <span>Testing runs <strong>in parallel with phases 3 & 4</strong> — write tests alongside each module, not after. Retrofitting tests onto complex async code is significantly harder.</span>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ──────────────────────────────── PHASE 6 ── -->
+  <div class="phase ph-6" id="ph6">
+    <div class="phase-header" onclick="toggle(this)">
+      <span class="phase-num">06</span>
+      <span class="phase-title">CI/CD & Deployment</span>
+      <div class="phase-meta">
+        <span class="tag tag-duration">Wk 19–22</span>
+      </div>
+    </div>
+    <div class="phase-body">
+
+      <div class="section">
+        <div class="section-label">CI/CD pipelines — GitHub Actions</div>
+        <ul class="tasks">
+          <li>Add <code>.github/workflows/api.yml</code>: lint → test → build Docker image → push to ECR → deploy to staging.</li>
+          <li>Add <code>.github/workflows/infra.yml</code>: <code>terraform fmt</code> check → <code>terraform validate</code> → plan on PR → apply on merge to main (staging only; prod requires manual approval).</li>
+          <li>Add <code>.github/workflows/ml.yml</code> (already started): lint Python → run pytest → evaluate model if training data changed.</li>
+          <li>Enforce branch protection: require 1 review + all status checks green before merge to <code>main</code>.</li>
+          <li>Add Dependabot for automated dependency updates (weekly, grouped by ecosystem).</li>
+        </ul>
+      </div>
+
+      <div class="section">
+        <div class="section-label">Docker & container registry</div>
+        <ul class="tasks">
+          <li>Write production <code>Dockerfile</code> for <code>apps/api</code>: multi-stage build (build stage → slim runtime), non-root user, <code>HEALTHCHECK</code> directive.</li>
+          <li>Write Dockerfiles for each service in <code>services/</code> — ASR worker uses CUDA base image.</li>
+          <li>Complete Terraform <code>infrastructure/terraform/modules/ecr/</code> — create repositories for all service images.</li>
+          <li>Tag images with Git SHA; never push <code>:latest</code> to production ECR.</li>
+        </ul>
+      </div>
+
+      <div class="section">
+        <div class="section-label">Terraform — provision staging environment</div>
+        <ul class="tasks">
+          <li>Complete <code>infrastructure/terraform/environments/staging/terraform.tfvars</code> — medium-sized resources, single-AZ, no multi-AZ RDS.</li>
+          <li>Run <code>terraform apply</code> for staging: VPC, EKS cluster, RDS PostgreSQL, ElastiCache Redis, MSK Kafka, S3 buckets, SSM parameters.</li>
+          <li>Verify all outputs: cluster endpoint, DB connection string, bucket names — store in GitHub Secrets.</li>
+        </ul>
+      </div>
+
+      <div class="section">
+        <div class="section-label">Kubernetes — staging deployment</div>
+        <ul class="tasks">
+          <li>Complete <code>infrastructure/k8s/base/</code>: namespace, RBAC, network policies, ConfigMaps, ExternalSecrets CRDs.</li>
+          <li>Complete deployment manifests for API, ASR worker, quality-engine, data-pipeline, financial-service.</li>
+          <li>Apply <code>infrastructure/k8s/overlays/staging/</code> — lower replica counts, dev image tags, relaxed resource limits.</li>
+          <li>Verify all pods reach <code>Running</code>; confirm inter-service communication via <code>ClusterIP</code> services.</li>
+          <li>Configure NGINX ingress with TLS via cert-manager + Let's Encrypt for staging domain.</li>
+        </ul>
+      </div>
+
+      <div class="section">
+        <div class="section-label">Monitoring stack</div>
+        <ul class="tasks">
+          <li>Deploy Prometheus + Grafana via Helm; configure <code>infrastructure/monitoring/prometheus/prometheus.yml</code> scrape targets.</li>
+          <li>Create the 4 Grafana dashboards: <code>api-overview.json</code>, <code>infrastructure.json</code>, <code>ml-pipeline.json</code>, <code>business.json</code>.</li>
+          <li>Configure alerting rules in <code>infrastructure/monitoring/prometheus/rules/</code> for API error rate, DB lag, payment failures.</li>
+          <li>Integrate Sentry SDK in the NestJS API for runtime error tracking.</li>
+        </ul>
+      </div>
+
+      <div class="section">
+        <div class="section-label">Milestone</div>
+        <div class="milestones">
+          <div class="milestone"><div class="milestone-icon">✓</div><div><strong>M6a</strong> — CI pipeline runs on every PR; Docker images pushed to ECR automatically.</div></div>
+          <div class="milestone"><div class="milestone-icon">✓</div><div><strong>M6b</strong> — Full stack running on staging K8s; Grafana dashboards showing live data; Sentry receiving errors.</div></div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ──────────────────────────────── PHASE 7 ── -->
+  <div class="phase ph-7" id="ph7">
+    <div class="phase-header" onclick="toggle(this)">
+      <span class="phase-num">07</span>
+      <span class="phase-title">Production Hardening & Final Delivery</span>
+      <div class="phase-meta">
+        <span class="tag tag-duration">Wk 23–26</span>
+      </div>
+    </div>
+    <div class="phase-body">
+
+      <div class="section">
+        <div class="section-label">Production infrastructure</div>
+        <ul class="tasks">
+          <li>Complete <code>infrastructure/terraform/environments/prod/terraform.tfvars</code> — multi-AZ RDS, larger EKS node groups with GPU nodes, stricter security groups.</li>
+          <li>Apply production Terraform — require manual approval in GitHub Actions workflow (<code>environment: production</code> with required reviewer).</li>
+          <li>Enable RDS automated backups (7-day retention), point-in-time recovery, and cross-region snapshot replication.</li>
+          <li>Configure Cloudflare DNS and WAF rules via Terraform <code>cloudflare</code> module — enable DDoS protection and bot management.</li>
+        </ul>
+      </div>
+
+      <div class="section">
+        <div class="section-label">Security hardening</div>
+        <ul class="tasks">
+          <li>Apply <code>infrastructure/k8s/overlays/prod/network-policies/</code> — restrict all egress to explicit allow-list.</li>
+          <li>Enable Pod Security Admission (<code>restricted</code> profile) for all non-system namespaces.</li>
+          <li>Rotate all secrets via <code>infrastructure/scripts/rotate-secrets.sh</code>; store new values in AWS Secrets Manager, pull via ExternalSecrets operator.</li>
+          <li>Enable AWS GuardDuty and CloudTrail on the production account for threat detection and audit logging.</li>
+          <li>Run a full penetration test using OWASP ZAP authenticated scan; document and remediate all findings.</li>
+        </ul>
+      </div>
+
+      <div class="section">
+        <div class="section-label">Documentation — complete all missing files</div>
+        <ul class="tasks">
+          <li>Write <code>docs/local-setup.md</code> — step-by-step guide covering all prerequisites, Docker stack, seed data, and common troubleshooting.</li>
+          <li>Write <code>CONTRIBUTING.md</code> — branch naming, commit conventions, PR template, coding standards, test requirements.</li>
+          <li>Generate OpenAPI spec from NestJS decorators (<code>@nestjs/swagger</code>); publish at <code>/api-docs</code> in staging only.</li>
+          <li>Write <code>docs/ml-baseline.md</code> — model performance metrics, dataset sources, and fine-tuning instructions.</li>
+          <li>Complete <code>data/registry/lineage/v1.yaml</code> — document provenance of all ingested datasets.</li>
+        </ul>
+      </div>
+
+      <div class="section">
+        <div class="section-label">Production go-live checklist</div>
+        <ul class="tasks">
+          <li>Run <code>infrastructure/scripts/health-check.sh</code> against production — all services must return healthy.</li>
+          <li>Execute smoke tests on production: register → submit audio → confirm quality score appears → confirm wallet updated.</li>
+          <li>Verify all Grafana SLO dashboards are green; set up PagerDuty or equivalent on-call rotation for P1 alerts.</li>
+          <li>Perform a dry-run of the disaster recovery procedure: simulate RDS failover, verify API recovers within defined RTO.</li>
+          <li>Tag the release: <code>git tag v1.0.0</code>; create GitHub Release with changelog generated from conventional commits.</li>
+        </ul>
+      </div>
+
+      <div class="section">
+        <div class="section-label">Post-launch — first 30 days</div>
+        <ul class="tasks">
+          <li>Monitor contributor onboarding funnel daily — track drop-off at phone verification, first task, and first payout.</li>
+          <li>Set up weekly ML model evaluation cron: compute WER on new gold-standard transcriptions added by the quality team.</li>
+          <li>Hold weekly retrospectives; triage any Sentry errors that exceed 10 occurrences/day.</li>
+          <li>Initiate <code>data/versions/v2/</code> dataset snapshot with first month of platform data.</li>
+        </ul>
+      </div>
+
+      <div class="section">
+        <div class="section-label">Milestone</div>
+        <div class="milestones">
+          <div class="milestone"><div class="milestone-icon">✓</div><div><strong>M7 — Production live</strong> — All services healthy, documentation complete, SLOs met, on-call rotation active, v1.0.0 tagged.</div></div>
+        </div>
+        <div class="callout callout-ok" style="margin-top:1rem">
+          <span class="callout-icon">✓</span>
+          <span><strong>Project delivered.</strong> The Tkllm-Darija API is in production, monitored, documented, and ready to onboard contributors and B2B customers.</span>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ──────────────────────────────── TIMELINE ── -->
+  <div class="timeline-wrap">
+    <div class="timeline-title">Estimated Timeline Overview</div>
+    <div class="timeline">
+      <div class="tl-row">
+        <div class="tl-label">Phase 0<br>Setup & Audit</div>
+        <div class="tl-bar-wrap"><div class="tl-bar bar-0">Wk 1–2</div></div>
+      </div>
+      <div class="tl-row">
+        <div class="tl-label">Phase 1<br>API Foundation</div>
+        <div class="tl-bar-wrap"><div class="tl-bar bar-1">Wk 3–6</div></div>
+      </div>
+      <div class="tl-row">
+        <div class="tl-label">Phase 2<br>Auth & Users</div>
+        <div class="tl-bar-wrap"><div class="tl-bar bar-2">Wk 7–9</div></div>
+      </div>
+      <div class="tl-row">
+        <div class="tl-label">Phase 3<br>Data & Tasks</div>
+        <div class="tl-bar-wrap"><div class="tl-bar bar-3">Wk 10–14</div></div>
+      </div>
+      <div class="tl-row">
+        <div class="tl-label">Phase 4<br>ML & Services</div>
+        <div class="tl-bar-wrap"><div class="tl-bar bar-4">Wk 15–18</div></div>
+      </div>
+      <div class="tl-row">
+        <div class="tl-label">Phase 5<br>Testing</div>
+        <div class="tl-bar-wrap"><div class="tl-bar bar-5">Wk 17–20</div></div>
+      </div>
+      <div class="tl-row">
+        <div class="tl-label">Phase 6<br>CI/CD & Deploy</div>
+        <div class="tl-bar-wrap"><div class="tl-bar bar-6">Wk 19–22</div></div>
+      </div>
+      <div class="tl-row">
+        <div class="tl-label">Phase 7<br>Hardening</div>
+        <div class="tl-bar-wrap"><div class="tl-bar bar-7">Wk 23–26</div></div>
+      </div>
+      <div class="tl-axis">
+        <div></div>
+        <div class="tl-axis-bar">
+          <span>Week 1</span>
+          <span>Week 7</span>
+          <span>Week 13</span>
+          <span>Week 19</span>
+          <span>Week 26</span>
+        </div>
+      </div>
+    </div>
+    <div class="callout callout-info" style="margin-top:1.5rem">
+      <span class="callout-icon">ℹ</span>
+      <span>Phases 5, 6, and 7 have intentional overlaps — testing runs in parallel with development, CI/CD setup begins before all services are complete, and production hardening runs alongside final testing. These overlaps are deliberate; treat them as parallel tracks, not sequential gates.</span>
+    </div>
+  </div>
+
+</main>
+
+<footer>
+  <strong>Tkllm-Darija</strong> — API Implementation Roadmap &nbsp;·&nbsp; 8 phases &nbsp;·&nbsp; ~26 weeks &nbsp;·&nbsp; NestJS · PostgreSQL · Kafka · Kubernetes
+</footer>
+
+<script>
+  function toggle(header) {
+    const phase = header.closest('.phase');
+    phase.classList.toggle('open');
+  }
+  // Open first phase by default (already done with class)
+  // Smooth anchor scrolling
+  document.querySelectorAll('a[href^="#"]').forEach(a => {
+    a.addEventListener('click', e => {
+      e.preventDefault();
+      const el = document.querySelector(a.getAttribute('href'));
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        setTimeout(() => el.classList.add('open'), 300);
+      }
+    });
+  });
+</script>
+</body>
+</html>

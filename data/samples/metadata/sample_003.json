@@ -1,0 +1,16 @@
+{
+  "audio_file": "data/samples/audio_samples/sample_003.wav",
+  "transcript_file": "data/samples/transcripts/sample_003.txt",
+  "speaker_id": "user_rbt_003",
+  "language": "darija",
+  "confidence": 0.87,
+  "accent": "Chamali",
+  "domain": "medical",
+  "duration_seconds": 6.0,
+  "metadata": {
+    "region": "Rabat-Salé-Kénitra",
+    "gender": "female",
+    "age_group": "20-30",
+    "environment": "clinic_quiet"
+  }
+}

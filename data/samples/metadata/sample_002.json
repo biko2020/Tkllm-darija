@@ -1,15 +1,16 @@
 {
-  "audio_file": "data/samples/audio_samples/sample_001.wav",
-  "transcript_file": "transcripts/sample_002.txt",
-  "speaker_id": "user_cas_002",
+  "audio_file": "data/samples/audio_samples/sample_002.wav",
+  "transcript_file": "data/samples/transcripts/sample_002.txt",
+  "speaker_id": "user_mar_002",
   "language": "darija",
-  "confidence": 0.98,
+  "confidence": 0.90,
+  "accent": "Marrakchi",
+  "domain": "market_negotiation",
+  "duration_seconds": 12.0,
   "metadata": {
-    "region": "Casablanca-Settat",
-    "accent": "Casablanca",
+    "region": "Marrakech-Safi",
     "gender": "male",
-    "age_group": "25-35",
-    "environment": "office_quiet",
-    "duration_seconds": 8.0
+    "age_group": "30-40",
+    "environment": "market_noisy"
   }
 }
