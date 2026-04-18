@@ -164,17 +164,68 @@ Tkllm-darija/
 │   └── api/                                          # NestJS — main application API (REST + GraphQL)
 │       ├── .env
 │       ├── .env.example
-│       ├── package.json
-│       ├── src/
-│       │   ├── modules/                              # user, task, data, quality, auth
-│       │   ├── common/                               # guards, interceptors, filters, pipes
-│       │   ├── config/
-│       │   └── main.ts
-│       ├── prisma/                                   # Schema & migrations
-│       └── Dockerfile
+│       ├── package.json                              # API dependencies and scripts
+│       ├── Dockerfile                                # Docker image definition for the NestJS API
+│       ├── prisma/                                   # Prisma ORM schema and migrations
+│       │   ├── schema.prisma                         # Main database schema definition
+│       │   └── migrations/                           # Generated Prisma migrations
+│       │
+│       └── src/                                      # Source code for the NestJS backend
+│           ├── main.ts                               # Application bootstrap, module initialization, and global setup
+│           ├── config/                               # Configuration files and environment validation
+│           │   ├── configuration.ts                  # Global config service (using @nestjs/config)
+│           │   ├── validation.schema.ts              # Joi/Zod schema for environment variables
+│           │   └── swagger.ts                        # Swagger/OpenAPI configuration
+│           │
+│           ├── common/                               # Shared cross-cutting concerns
+│           │   ├── decorators/                       # Custom decorators (e.g., @CurrentUser, @Roles)
+│           │   ├── filters/                          # Global exception filters
+│           │   ├── guards/                           # Authentication & authorization guards (JWT, Roles)
+│           │   ├── interceptors/                     # Logging, transformation, and timeout interceptors
+│           │   ├── pipes/                            # Custom validation pipes
+│           │   └── utils/                            # Common utilities and helpers
+│           │
+│           └── modules/                              # Feature-based modules (Domain-Driven structure)
+│               ├── auth/
+│               │   ├── auth.module.ts
+│               │   ├── auth.service.ts
+│               │   ├── auth.controller.ts
+│               │   ├── strategies/                   # JWT, Phone OTP, etc.
+│               │   └── dto/                          # Login, Register, Refresh DTOs
+│               │
+│               ├── user/
+│               │   ├── user.module.ts
+│               │   ├── user.service.ts
+│               │   ├── user.controller.ts
+│               │   └── dto/
+│               │
+│               ├── task/
+│               │   ├── task.module.ts                # Contributor task management
+│               │   ├── task.service.ts
+│               │   ├── task.controller.ts
+│               │   └── dto/
+│               │
+│               ├── data/
+│               │   ├── data.module.ts                # Dataset & ingestion management
+│               │   ├── data.service.ts
+│               │   ├── data.controller.ts
+│               │   └── dto/
+│               │
+│               ├── quality/
+│               │   ├── quality.module.ts             # Quality scoring and validation engine
+│               │   ├── quality.service.ts
+│               │   ├── quality.controller.ts
+│               │   └── dto/
+│               │
+│               └── payment/                          # Financial & payout module
+│                   ├── payment.module.ts
+│                   ├── payment.service.ts
+│                   ├── payment.controller.ts
+│                   └── dto/
 │
 ├── services/                                         # Standalone background services & workers
 │   ├── asr-worker/                                   # Whisper / wav2vec transcription worker
+│   │   ├── README.md
 │   │   ├── .env
 │   │   ├── .env.example
 │   │   ├── package.json
@@ -209,13 +260,43 @@ Tkllm-darija/
 │       │   └── fraud/                               # Fraud detection rules & monitoring
 │       └── Dockerfile
 │
-├── packages/                                        # Shared internal libraries (monorepo)
-│   ├── types/                                       # Shared TypeScript types & interfaces
-│   │   └── package.json
-│   ├── ui/                                          # Shared design system components
-│   │   └── package.json
-│   └── validators/                                  # Shared validation schemas (Zod)
-│       └── package.json
+├── packages/                                        # Shared internal libraries (Turborepo monorepo packages)
+│   ├── types/                                       # Shared TypeScript types and interfaces used across the entire project
+│   │   ├── package.json                             # Package configuration for @tkllm/types
+│   │   ├── tsconfig.json                            # TypeScript configuration for the types package
+│   │   └── src/
+│   │       ├── index.ts                             # Main export file
+│   │       ├── user.types.ts                        # User-related types and interfaces
+│   │       ├── task.types.ts                        # Task and annotation related types
+│   │       ├── audio.types.ts                       # Audio, transcription, and ASR-related types
+│   │       ├── common.types.ts                      # Common utility types (Pagination, APIResponse, etc.)
+│   │       └── index.ts                             # Barrel export file
+│   │
+│   ├── ui/                                          # Shared design system and reusable UI components
+│   │   ├── package.json                             # Package configuration for @tkllm/ui
+│   │   ├── tsconfig.json                            # TypeScript configuration
+│   │   ├── src/
+│   │   │   ├── index.ts                             # Main export barrel
+│   │   │   ├── components/                          # Reusable React components
+│   │   │   │   ├── Button/
+│   │   │   │   ├── Card/
+│   │   │   │   ├── DataTable/
+│   │   │   │   └── DashboardLayout/
+│   │   │   ├── theme/                               # Shared theme, colors, and Tailwind config
+│   │   │   └── hooks/                               # Shared custom React hooks
+│   │   └── README.md                                # Usage guide for the design system
+│   │
+│   └── validators/                                  # Shared validation schemas using Zod
+│       ├── package.json                             # Package configuration for @tkllm/validators
+│       ├── tsconfig.json                            # TypeScript configuration
+│       ├── src/
+│       │   ├── index.ts                             # Main export file
+│       │   ├── auth.schema.ts                       # Validation schemas for authentication
+│       │   ├── task.schema.ts                       # Task creation / submission validation
+│       │   ├── audio.schema.ts                      # Audio upload and metadata validation
+│       │   ├── quality.schema.ts                    # Quality review and scoring validation
+│       │   └── common.schema.ts                     # Reusable common schemas (pagination, id, etc.)
+│       └── README.md                                # Documentation and usage examples
 │
 ├── ml/                                              # Machine Learning research, training, and experimentation workspace
 │   ├── requirements.txt                             # Python dependencies for ML training and evaluation
@@ -619,6 +700,7 @@ Tkllm-darija/
 ├──.env.example
 ├──.env
 ├── CONTRIBUTING.md
+├── tsconfig.json
 ├── package.json                                     # Root workspace configuration
 ├── turbo.json                                       # Turborepo monorepo config
 └── LICENSE

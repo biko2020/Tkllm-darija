@@ -1,0 +1,713 @@
+// =============================================================================
+// Prisma Schema — Tkllm-darija
+// apps/api/prisma/schema.prisma
+//
+// Database: PostgreSQL 16 + TimescaleDB (hypertables for analytics)
+// Naming: snake_case in DB, camelCase in Prisma client
+//
+// Apply migrations:
+//   npx prisma migrate dev --name <description>
+//   npx prisma generate
+// =============================================================================
+
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["postgresqlExtensions", "metrics"]
+}
+
+datasource db {
+  provider   = "postgresql"
+  url        = env("DATABASE_URL")
+  extensions = [
+    timescaledb,
+    postgis,
+    pg_trgm,
+    uuid_ossp(map: "uuid-ossp"),
+    pgcrypto,
+  ]
+}
+
+// =============================================================================
+// Enums
+// =============================================================================
+
+enum UserRole {
+  CONTRIBUTOR
+  ADMIN
+  B2B_CLIENT
+  REVIEWER
+}
+
+enum UserStatus {
+  PENDING_VERIFICATION
+  ACTIVE
+  SUSPENDED
+  BANNED
+}
+
+enum Gender {
+  MALE
+  FEMALE
+  NON_BINARY
+  PREFER_NOT
+}
+
+enum AgeGroup {
+  AGE_18_24
+  AGE_25_34
+  AGE_35_44
+  AGE_45_54
+  AGE_55_64
+  AGE_65_PLUS
+}
+
+enum MoroccanRegion {
+  CASABLANCA_SETTAT
+  RABAT_SALE_KENITRA
+  FES_MEKNES
+  MARRAKECH_SAFI
+  TANGER_TETOUAN_ALHOCEIMA
+  SOUSS_MASSA
+  ORIENTAL
+  BENI_MELLAL_KHENIFRA
+  DRAA_TAFILALET
+  GUELMIM_OUED_NOUN
+  LAAYOUNE_SAKIA_ALHAMRA
+  DAKHLA_OUED_EDDAHAB
+}
+
+enum DarijaDialect {
+  CASABLANCI
+  MARRAKCHI
+  FASSI
+  RBATI
+  SOUSS
+  JEBLI
+  SAHRAWI
+  OTHER
+}
+
+enum Language {
+  DARIJA
+  DARIJA_FR
+  DARIJA_AR
+  DARIJA_EN
+  TAMAZIGHT
+  MSA
+}
+
+enum TaskType {
+  VOICE_RECORDING
+  TEXT_LABELING
+  TRANSLATION
+  SENTIMENT
+  NER
+  IMAGE_DESCRIPTION
+  VIDEO_DESCRIPTION
+  TRANSCRIPT_CORRECTION
+}
+
+enum TaskDomain {
+  GENERAL
+  BANKING
+  HEALTHCARE
+  ECOMMERCE
+  TOURISM
+  LEGAL
+  SOCIAL
+}
+
+enum TaskDifficulty {
+  EASY
+  MEDIUM
+  HARD
+}
+
+enum TaskStatus {
+  AVAILABLE
+  ASSIGNED
+  SUBMITTED
+  UNDER_REVIEW
+  APPROVED
+  REJECTED
+  EXPIRED
+}
+
+enum SubmissionStatus {
+  PENDING
+  TRANSCRIBING
+  UNDER_REVIEW
+  APPROVED
+  REJECTED
+  FLAGGED
+}
+
+enum RejectionReason {
+  BACKGROUND_NOISE
+  CLIPPING
+  WRONG_LANGUAGE
+  INCOMPLETE_PROMPT
+  TOO_SHORT
+  TOO_LONG
+  PROFANITY
+  PII_DETECTED
+  DUPLICATE_SUBMISSION
+  INAUDIBLE
+  SCRIPTED_NOT_NATURAL
+  OTHER
+}
+
+enum ConsentCategory {
+  AUDIO
+  TEXT
+  METADATA
+  LOCATION
+  BIOMETRIC
+}
+
+enum TransactionType {
+  REWARD
+  PAYOUT
+  REVERSAL
+  BONUS
+  PENALTY
+}
+
+enum TransactionStatus {
+  PENDING
+  COMPLETED
+  FAILED
+  REVERSED
+}
+
+enum PaymentProvider {
+  ORANGE_MONEY
+  INWI_MONEY
+  CMI
+  PAYPAL
+  WISE
+}
+
+enum ReviewMethod {
+  AUTOMATED
+  HUMAN
+  CONSENSUS
+}
+
+enum B2BPlan {
+  STARTER
+  PROFESSIONAL
+  ENTERPRISE
+  RESEARCH
+}
+
+enum DatasetType {
+  SPEECH_TO_TEXT
+  PARALLEL_CORPUS
+  ANNOTATED_FULL
+  CUSTOM
+}
+
+enum DatasetFormat {
+  PARQUET
+  JSONL
+  CSV
+  HF_DATASET
+}
+
+enum DatasetLicense {
+  COMMERCIAL
+  RESEARCH_ONLY
+  CC_BY_4
+}
+
+// =============================================================================
+// Auth & Identity
+// =============================================================================
+
+model User {
+  id          String     @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  email       String?    @unique
+  phone       String?    @unique  // E.164 format +212...
+  passwordHash String?   @map("password_hash")
+  role        UserRole   @default(CONTRIBUTOR)
+  status      UserStatus @default(PENDING_VERIFICATION)
+  supabaseId  String?    @unique @map("supabase_id")
+  lastLoginAt DateTime?  @map("last_login_at") @db.Timestamptz
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt DateTime @updatedAt      @map("updated_at") @db.Timestamptz
+
+  // Relations
+  profile       ContributorProfile?
+  consents      ConsentRecord[]
+  assignments   TaskAssignment[]
+  submissions   AudioSubmission[]
+  reviews       QualityReview[]
+  wallet        Wallet?
+  transactions  Transaction[]
+  auditLogs     AuditLog[]
+  b2bClient     B2BClient?
+
+  @@index([email])
+  @@index([phone])
+  @@index([supabaseId])
+  @@index([status, role])
+  @@map("users")
+}
+
+model OtpCode {
+  id          String   @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  phone       String
+  code        String   // bcrypt hash of 6-digit code
+  expiresAt   DateTime @map("expires_at") @db.Timestamptz
+  usedAt      DateTime? @map("used_at") @db.Timestamptz
+  attempts    Int      @default(0)
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  @@index([phone, expiresAt])
+  @@map("otp_codes")
+}
+
+model RefreshToken {
+  id          String   @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  userId      String   @map("user_id") @db.Uuid
+  tokenHash   String   @unique @map("token_hash") // bcrypt hash
+  expiresAt   DateTime @map("expires_at") @db.Timestamptz
+  revokedAt   DateTime? @map("revoked_at") @db.Timestamptz
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz
+  ipAddress   String?  @map("ip_address")
+  userAgent   String?  @map("user_agent")
+
+  @@index([userId])
+  @@index([tokenHash])
+  @@index([expiresAt])
+  @@map("refresh_tokens")
+}
+
+// =============================================================================
+// Contributor Profile
+// =============================================================================
+
+model ContributorProfile {
+  id               String          @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  userId           String          @unique @map("user_id") @db.Uuid
+  displayName      String          @map("display_name") @db.VarChar(60)
+  region           MoroccanRegion?
+  ageGroup         AgeGroup?       @map("age_group")
+  gender           Gender?
+  nativeDialect    DarijaDialect?  @map("native_dialect")
+  firstLanguage    Language?       @map("first_language")
+  otherLanguages   Language[]      @map("other_languages")
+  completeness     Int             @default(0)       // 0–100
+  reputationScore  Decimal         @default(50) @map("reputation_score") @db.Decimal(5, 2)
+  totalTasks       Int             @default(0) @map("total_tasks")
+  totalEarnings    Decimal         @default(0) @map("total_earnings") @db.Decimal(10, 2)
+  streakDays       Int             @default(0) @map("streak_days")
+  lastActiveAt     DateTime?       @map("last_active_at") @db.Timestamptz
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt DateTime @updatedAt      @map("updated_at") @db.Timestamptz
+
+  // Relations
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([region])
+  @@index([nativeDialect])
+  @@index([reputationScore])
+  @@index([totalEarnings(sort: Desc)])
+  @@map("contributor_profiles")
+}
+
+model ConsentRecord {
+  id        String          @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  userId    String          @map("user_id") @db.Uuid
+  category  ConsentCategory
+  version   String          @db.VarChar(20)
+  grantedAt DateTime        @map("granted_at") @db.Timestamptz
+  revokedAt DateTime?       @map("revoked_at") @db.Timestamptz
+  ipAddress String?         @map("ip_address") @db.VarChar(45)  // zeroed last octet
+  userAgent String?         @map("user_agent") @db.VarChar(500)
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt DateTime @updatedAt      @map("updated_at") @db.Timestamptz
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, category])
+  @@index([userId])
+  @@index([category, revokedAt])
+  @@map("consent_records")
+}
+
+// =============================================================================
+// Task Engine
+// =============================================================================
+
+model TaskTemplate {
+  id               String         @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  type             TaskType
+  domain           TaskDomain
+  difficulty       TaskDifficulty @default(MEDIUM)
+  language         Language       @default(DARIJA)
+  promptText       String?        @map("prompt_text") @db.Text
+  promptArabic     String?        @map("prompt_arabic") @db.Text
+  promptArabizi    String?        @map("prompt_arabizi") @db.Text
+  instructions     String         @db.Text
+  estimatedMinutes Int            @default(5) @map("estimated_minutes")
+  baseRewardMad    Decimal        @default(0.50) @map("base_reward_mad") @db.Decimal(8, 2)
+  maxRewardMad     Decimal        @default(2.00) @map("max_reward_mad") @db.Decimal(8, 2)
+  isActive         Boolean        @default(true) @map("is_active")
+  totalAssigned    Int            @default(0) @map("total_assigned")
+  totalApproved    Int            @default(0) @map("total_approved")
+  campaignId       String?        @map("campaign_id") @db.Uuid
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt DateTime @updatedAt      @map("updated_at") @db.Timestamptz
+
+  // Relations
+  campaign    Campaign?       @relation(fields: [campaignId], references: [id])
+  assignments TaskAssignment[]
+
+  @@index([type, domain, language])
+  @@index([isActive, domain])
+  @@index([campaignId])
+  @@map("task_templates")
+}
+
+model TaskAssignment {
+  id            String     @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  taskId        String     @map("task_id") @db.Uuid
+  contributorId String     @map("contributor_id") @db.Uuid
+  status        TaskStatus @default(ASSIGNED)
+  assignedAt    DateTime   @default(now()) @map("assigned_at") @db.Timestamptz
+  submittedAt   DateTime?  @map("submitted_at") @db.Timestamptz
+  expiresAt     DateTime   @map("expires_at") @db.Timestamptz
+  campaignId    String?    @map("campaign_id") @db.Uuid
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt DateTime @updatedAt      @map("updated_at") @db.Timestamptz
+
+  // Relations
+  task        TaskTemplate    @relation(fields: [taskId], references: [id])
+  contributor User            @relation(fields: [contributorId], references: [id])
+  campaign    Campaign?       @relation(fields: [campaignId], references: [id])
+  submission  AudioSubmission?
+
+  @@unique([taskId, contributorId])
+  @@index([contributorId, status])
+  @@index([expiresAt, status])
+  @@index([taskId, status])
+  @@map("task_assignments")
+}
+
+// =============================================================================
+// Audio & Submissions
+// =============================================================================
+
+model AudioSubmission {
+  id               String          @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  taskId           String          @map("task_id") @db.Uuid
+  contributorId    String          @map("contributor_id") @db.Uuid
+  assignmentId     String          @unique @map("assignment_id") @db.Uuid
+  status           SubmissionStatus @default(PENDING)
+
+  // Storage
+  storageBucket    String          @map("storage_bucket") @db.VarChar(100)
+  storageKey       String          @map("storage_key") @db.VarChar(500)
+  mimeType         String          @map("mime_type") @db.VarChar(50)
+  durationSeconds  Decimal         @map("duration_seconds") @db.Decimal(8, 2)
+  sizeBytes        Int             @map("size_bytes")
+  checksumSha256   String?         @map("checksum_sha256") @db.Char(64)
+  audioHash        String?         @map("audio_hash") @db.VarChar(64) // for duplicate detection
+
+  // ASR output
+  transcript       String?         @db.Text
+  transcriptArabizi String?        @map("transcript_arabizi") @db.Text
+  confidenceScore  Decimal?        @map("confidence_score") @db.Decimal(4, 3) // 0.000–1.000
+  detectedLanguage String?         @map("detected_language") @db.VarChar(20)
+
+  // Quality
+  qualityScore     Decimal?        @map("quality_score") @db.Decimal(4, 3)
+  snrDb            Decimal?        @map("snr_db") @db.Decimal(6, 2)
+  rejectionReason  RejectionReason? @map("rejection_reason")
+
+  // Flags
+  isDatasetEligible Boolean        @default(false) @map("is_dataset_eligible")
+  piiDetected      Boolean         @default(false) @map("pii_detected")
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt DateTime @updatedAt      @map("updated_at") @db.Timestamptz
+
+  // Relations
+  contributor User            @relation(fields: [contributorId], references: [id])
+  assignment  TaskAssignment  @relation(fields: [assignmentId], references: [id])
+  reviews     QualityReview[]
+  transactions Transaction[]
+
+  @@index([contributorId, status])
+  @@index([status, createdAt(sort: Desc)])
+  @@index([audioHash])               // fast duplicate detection
+  @@index([isDatasetEligible, qualityScore(sort: Desc)])
+  // Full-text search on transcript
+  @@index([transcript(ops: raw("gin_trgm_ops"))], type: Gin, map: "idx_submissions_transcript_trgm")
+  @@map("audio_submissions")
+}
+
+// =============================================================================
+// Quality Review
+// =============================================================================
+
+model QualityReview {
+  id            String         @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  submissionId  String         @map("submission_id") @db.Uuid
+  reviewerId    String?        @map("reviewer_id") @db.Uuid   // null = automated
+  method        ReviewMethod   @default(AUTOMATED)
+  overallScore  Decimal        @map("overall_score") @db.Decimal(4, 3)
+  audioScore    Decimal?       @map("audio_score") @db.Decimal(4, 3)
+  transcriptScore Decimal?     @map("transcript_score") @db.Decimal(4, 3)
+  completionScore Decimal?     @map("completion_score") @db.Decimal(4, 3)
+  outcome       SubmissionStatus
+  correctedTranscript String?  @map("corrected_transcript") @db.Text
+  notes         String?        @db.Text
+  durationSeconds Decimal?     @map("duration_seconds") @db.Decimal(6, 2)
+  iaa           Decimal?       @map("iaa") @db.Decimal(4, 3) // inter-annotator agreement
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt DateTime @updatedAt      @map("updated_at") @db.Timestamptz
+
+  // Relations
+  submission AudioSubmission @relation(fields: [submissionId], references: [id])
+  reviewer   User?           @relation(fields: [reviewerId], references: [id])
+
+  @@index([submissionId])
+  @@index([reviewerId])
+  @@index([outcome, createdAt(sort: Desc)])
+  @@map("quality_reviews")
+}
+
+// =============================================================================
+// Financial
+// =============================================================================
+
+model Wallet {
+  id            String    @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  contributorId String    @unique @map("contributor_id") @db.Uuid
+  balanceMad    Decimal   @default(0) @map("balance_mad") @db.Decimal(10, 2)
+  pendingMad    Decimal   @default(0) @map("pending_mad") @db.Decimal(10, 2)
+  lifetimeMad   Decimal   @default(0) @map("lifetime_mad") @db.Decimal(12, 2)
+  lastPayoutAt  DateTime? @map("last_payout_at") @db.Timestamptz
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt DateTime @updatedAt      @map("updated_at") @db.Timestamptz
+
+  // Relations
+  contributor  User          @relation(fields: [contributorId], references: [id], onDelete: Cascade)
+  transactions Transaction[]
+
+  @@index([balanceMad(sort: Desc)])
+  @@map("wallets")
+}
+
+model Transaction {
+  id             String            @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  walletId       String            @map("wallet_id") @db.Uuid
+  contributorId  String            @map("contributor_id") @db.Uuid
+  type           TransactionType
+  status         TransactionStatus @default(PENDING)
+  amountMad      Decimal           @map("amount_mad") @db.Decimal(10, 2)
+  provider       PaymentProvider?
+  gatewayRef     String?           @map("gateway_ref") @db.VarChar(200)
+  idempotencyKey String            @unique @map("idempotency_key") @db.VarChar(200)
+  submissionId   String?           @map("submission_id") @db.Uuid
+  metadata       Json?             @db.JsonB
+  processedAt    DateTime?         @map("processed_at") @db.Timestamptz
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt DateTime @updatedAt      @map("updated_at") @db.Timestamptz
+
+  // Relations
+  wallet       Wallet          @relation(fields: [walletId], references: [id])
+  contributor  User            @relation(fields: [contributorId], references: [id])
+  submission   AudioSubmission? @relation(fields: [submissionId], references: [id])
+
+  @@index([contributorId, type])
+  @@index([status, createdAt(sort: Desc)])
+  @@index([idempotencyKey])
+  @@index([walletId, createdAt(sort: Desc)])
+  @@map("transactions")
+}
+
+// =============================================================================
+// Campaigns & B2B
+// =============================================================================
+
+model Campaign {
+  id               String     @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  name             String     @db.VarChar(200)
+  description      String     @db.Text
+  sponsorId        String?    @map("sponsor_id") @db.Uuid
+  domain           TaskDomain
+  language         Language
+  targetHours      Decimal    @map("target_hours") @db.Decimal(8, 2)
+  collectedHours   Decimal    @default(0) @map("collected_hours") @db.Decimal(8, 2)
+  rewardMultiplier Decimal    @default(1.0) @map("reward_multiplier") @db.Decimal(4, 2)
+  startDate        DateTime   @map("start_date") @db.Timestamptz
+  endDate          DateTime?  @map("end_date") @db.Timestamptz
+  isActive         Boolean    @default(true) @map("is_active")
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt DateTime @updatedAt      @map("updated_at") @db.Timestamptz
+
+  // Relations
+  sponsor      B2BClient?       @relation(fields: [sponsorId], references: [id])
+  tasks        TaskTemplate[]
+  assignments  TaskAssignment[]
+
+  @@index([isActive, domain])
+  @@index([startDate, endDate])
+  @@map("campaigns")
+}
+
+model B2BClient {
+  id            String   @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  userId        String   @unique @map("user_id") @db.Uuid
+  companyName   String   @map("company_name") @db.VarChar(200)
+  plan          B2BPlan  @default(STARTER)
+  apiKeyHash    String   @unique @map("api_key_hash") @db.VarChar(200)
+  monthlyQuota  Int      @default(10000) @map("monthly_quota")
+  usedQuota     Int      @default(0) @map("used_quota")
+  webhookUrl    String?  @map("webhook_url") @db.VarChar(500)
+  webhookSecret String?  @map("webhook_secret") @db.VarChar(200)
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt DateTime @updatedAt      @map("updated_at") @db.Timestamptz
+
+  // Relations
+  user      User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  campaigns Campaign[]
+  exports   DatasetExport[]
+
+  @@index([apiKeyHash])
+  @@map("b2b_clients")
+}
+
+// =============================================================================
+// Datasets
+// =============================================================================
+
+model Dataset {
+  id           String        @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  name         String        @db.VarChar(200)
+  description  String        @db.Text
+  version      String        @db.VarChar(20)
+  type         DatasetType
+  language     Language
+  domain       TaskDomain?
+  sizeRecords  Int           @default(0) @map("size_records")
+  sizeHours    Decimal       @default(0) @map("size_hours") @db.Decimal(10, 2)
+  storagePath  String        @map("storage_path") @db.VarChar(500)  // S3/R2 prefix
+  format       DatasetFormat @default(PARQUET)
+  license      DatasetLicense
+  qualityScore Decimal?      @map("quality_score") @db.Decimal(4, 3)
+  isPublished  Boolean       @default(false) @map("is_published")
+  publishedAt  DateTime?     @map("published_at") @db.Timestamptz
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt DateTime @updatedAt      @map("updated_at") @db.Timestamptz
+
+  // Relations
+  exports DatasetExport[]
+
+  @@unique([name, version])
+  @@index([type, language])
+  @@index([isPublished, publishedAt(sort: Desc)])
+  @@map("datasets")
+}
+
+model DatasetExport {
+  id          String   @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  datasetId   String   @map("dataset_id") @db.Uuid
+  clientId    String   @map("client_id") @db.Uuid
+  status      String   @default("pending") @db.VarChar(20) // pending|processing|ready|failed|expired
+  format      DatasetFormat
+  filters     Json?    @db.JsonB
+  outputKey   String?  @map("output_key") @db.VarChar(500)  // S3/R2 key of export zip
+  signedUrl   String?  @map("signed_url") @db.Text
+  signedUrlExpiresAt DateTime? @map("signed_url_expires_at") @db.Timestamptz
+  sizeBytes   BigInt?  @map("size_bytes")
+  recordCount Int?     @map("record_count")
+  startedAt   DateTime? @map("started_at") @db.Timestamptz
+  completedAt DateTime? @map("completed_at") @db.Timestamptz
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt DateTime @updatedAt      @map("updated_at") @db.Timestamptz
+
+  // Relations
+  dataset Dataset   @relation(fields: [datasetId], references: [id])
+  client  B2BClient @relation(fields: [clientId], references: [id])
+
+  @@index([clientId, status])
+  @@index([status, createdAt(sort: Desc)])
+  @@map("dataset_exports")
+}
+
+// =============================================================================
+// Analytics (TimescaleDB hypertables — created via migrations)
+// =============================================================================
+
+/// TimescaleDB hypertable — partition by time column
+/// Run after migration: SELECT create_hypertable('contributor_activity', 'hour', if_not_exists => true);
+model ContributorActivity {
+  id            String   @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  contributorId String   @map("contributor_id") @db.Uuid
+  hour          DateTime @map("hour") @db.Timestamptz  // hypertable partition key
+  tasksSubmitted Int     @default(0) @map("tasks_submitted")
+  tasksApproved  Int     @default(0) @map("tasks_approved")
+  audioSeconds   Decimal @default(0) @map("audio_seconds") @db.Decimal(10, 2)
+  earningsMad    Decimal @default(0) @map("earnings_mad") @db.Decimal(8, 2)
+  qualityAvg     Decimal @default(0) @map("quality_avg") @db.Decimal(4, 3)
+
+  @@index([contributorId, hour])
+  @@index([hour])
+  @@map("contributor_activity")
+}
+
+/// TimescaleDB hypertable for platform-wide metrics
+model PlatformMetric {
+  id              String   @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  hour            DateTime @map("hour") @db.Timestamptz
+  activeContributors Int   @default(0) @map("active_contributors")
+  tasksSubmitted  Int      @default(0) @map("tasks_submitted")
+  tasksApproved   Int      @default(0) @map("tasks_approved")
+  audioHours      Decimal  @default(0) @map("audio_hours") @db.Decimal(10, 2)
+  totalPayoutsMad Decimal  @default(0) @map("total_payouts_mad") @db.Decimal(12, 2)
+  avgQualityScore Decimal  @default(0) @map("avg_quality_score") @db.Decimal(4, 3)
+
+  @@index([hour(sort: Desc)])
+  @@map("platform_metrics")
+}
+
+// =============================================================================
+// Audit Log
+// =============================================================================
+
+model AuditLog {
+  id         String   @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  userId     String?  @map("user_id") @db.Uuid
+  action     String   @db.VarChar(100)   // e.g. "user.login", "submission.approve"
+  resource   String?  @db.VarChar(100)   // e.g. "AudioSubmission"
+  resourceId String?  @map("resource_id") @db.VarChar(100)
+  ipAddress  String?  @map("ip_address") @db.VarChar(45)
+  userAgent  String?  @map("user_agent") @db.VarChar(500)
+  metadata   Json?    @db.JsonB
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  // Relations
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([userId, createdAt(sort: Desc)])
+  @@index([action, createdAt(sort: Desc)])
+  @@index([resource, resourceId])
+  @@map("audit_logs")
+}
