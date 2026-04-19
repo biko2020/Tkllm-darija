@@ -168,21 +168,35 @@ Tkllm-darija/
 │       ├── Dockerfile                                # Docker image definition for the NestJS API
 │       ├── prisma/                                   # Prisma ORM schema and migrations
 │       │   ├── schema.prisma                         # Main database schema definition
-│       │   └── migrations/                           # Generated Prisma migrations
+│       │   ├── seed.ts                               # Prisma database seeder — creates realistic sample data for local development and testing
+│       │   └── migrations/                           # Auto-generated Prisma migration files
 │       │
 │       └── src/                                      # Source code for the NestJS backend
 │           ├── main.ts                               # Application bootstrap, module initialization, and global setup
+│           ├── app.module.ts                         # Root module wiring all feature modules
 │           ├── config/                               # Configuration files and environment validation
 │           │   ├── configuration.ts                  # Global config service (using @nestjs/config)
 │           │   ├── validation.schema.ts              # Joi/Zod schema for environment variables
 │           │   └── swagger.ts                        # Swagger/OpenAPI configuration
 │           │
 │           ├── common/                               # Shared cross-cutting concerns
+│           │   ├── index.ts
 │           │   ├── decorators/                       # Custom decorators (e.g., @CurrentUser, @Roles)
+│           │   │   └── roles.decorator.ts            # Custom @Roles decorator for role-based access control (RBAC).  
 │           │   ├── filters/                          # Global exception filters
-│           │   ├── guards/                           # Authentication & authorization guards (JWT, Roles)
+│           │   │   ├── all-exceptions.filter.ts
+│           │   │   └── http-exception.filter.ts 
+│           │   ├── guards/                           # Authentication and authorization guards
+│           │   │   ├── jwt-auth.guard.ts             # JWT authentication guard (extracts and validates token)
+│           │   │   ├── roles.guard.ts                # Role-based authorization guard (@Roles decorator)
+│           │   │   └── index.ts                      # Barrel export for easy imports
 │           │   ├── interceptors/                     # Logging, transformation, and timeout interceptors
+│           │   │   ├── logging.interceptor.ts  
+│           │   │   └── audit.interceptor.ts
 │           │   ├── pipes/                            # Custom validation pipes
+│           │   │   ├── parse-uuid.pipe.ts
+│           │   │   ├── validation.pipe.ts
+│           │   │   └── 
 │           │   └── utils/                            # Common utilities and helpers
 │           │
 │           └── modules/                              # Feature-based modules (Domain-Driven structure)
