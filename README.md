@@ -209,47 +209,53 @@ Tkllm-darija/
 │           │       ├── password.utils.ts             # Password hashing and comparison utilities
 │           │       └── date.utils.ts                 # Date/time helper functions (daysAgo, hoursAgo, etc.)
 │           │
-│           └── modules/                              # Feature-based modules (Domain-Driven structure)
-│               │   ├── health/                       # Health check module using @nestjs/terminus
-│               │   ├── health.module.ts              # Health module definition
-│               │   └── health.controller.ts          # /health endpoint with DB, HTTP, and system checks
+│           └── modules/                              # Feature-based modules (Domain-Driven Design structure)
+│               ├── health/                           # Health monitoring and readiness probes
+│               │   ├── health.module.ts              # Health module configuration with Terminus
+│               │   └── health.controller.ts          # /health endpoint with DB, HTTP, and system health checks
 │               │
-│               ├── auth/
-│               │   ├── auth.module.ts
-│               │   ├── auth.service.ts
-│               │   ├── auth.controller.ts
-│               │   ├── strategies/                   # JWT, Phone OTP, etc.
-│               │   └── dto/                          # Login, Register, Refresh DTOs
+│               ├── auth/                             # Authentication and authorization logic
+│               │   ├── auth.module.ts                # Auth module with strategies and JWT configuration
+│               │   ├── auth.service.ts               # Core auth logic (register, login, refresh, logout)
+│               │   ├── auth.controller.ts            # Auth endpoints (POST /auth/register, /login, /refresh, /logout)
+│               │   ├── strategies/                   # Passport.js authentication strategies
+│               │   │   ├── jwt.strategy.ts           # JWT token validation strategy
+│               │   │   └── local.strategy.ts         # Local (email/phone + password) strategy
+│               │   └── dto/                          # Data Transfer Objects for auth operations
+│               │       ├── register.dto.ts
+│               │       ├── login.dto.ts
+│               │       └── refresh-token.dto.ts
 │               │
-│               ├── user/
-│               │   ├── user.module.ts
-│               │   ├── user.service.ts
-│               │   ├── user.controller.ts
+│               ├── user/                             # User management and profiles
+│               │   ├── user.module.ts                # User module configuration
+│               │   ├── user.service.ts               # User CRUD and profile management logic
+│               │   ├── user.controller.ts            # User endpoints (GET /users/me, profile management)
+│               │   └── dto/                          # User-related DTOs
+│               │       └── update-profile.dto.ts
+│               │
+│               ├── task/                             # Task engine and contributor assignments
+│               │   ├── task.module.ts                # Task module with assignment logic
+│               │   ├── task.service.ts               # Task creation, assignment, and status management
+│               │   ├── task.controller.ts            # Task endpoints (list, assign, submit)
+│               │   └── dto/                          # Task-related DTOs
+│               │
+│               ├── data/                             # Dataset management and ingestion
+│               │   ├── data.module.ts                # Data module configuration
+│               │   ├── data.service.ts               # Dataset CRUD and ingestion orchestration
+│               │   ├── data.controller.ts            # Dataset endpoints and export management
 │               │   └── dto/
 │               │
-│               ├── task/
-│               │   ├── task.module.ts                # Contributor task management
-│               │   ├── task.service.ts
-│               │   ├── task.controller.ts
+│               ├── quality/                          # Quality scoring, validation, and review system
+│               │   ├── quality.module.ts             # Quality module configuration
+│               │   ├── quality.service.ts            # Scoring engine and review workflows
+│               │   ├── quality.controller.ts         # Quality review and scoring endpoints
 │               │   └── dto/
 │               │
-│               ├── data/
-│               │   ├── data.module.ts                # Dataset & ingestion management
-│               │   ├── data.service.ts
-│               │   ├── data.controller.ts
-│               │   └── dto/
-│               │
-│               ├── quality/
-│               │   ├── quality.module.ts             # Quality scoring and validation engine
-│               │   ├── quality.service.ts
-│               │   ├── quality.controller.ts
-│               │   └── dto/
-│               │
-│               └── payment/                          # Financial & payout module
-│                   ├── payment.module.ts
-│                   ├── payment.service.ts
-│                   ├── payment.controller.ts
-│                   └── dto/
+│               └── payment/                          # Financial system: wallets, payouts, and transactions
+│                   ├── payment.module.ts             # Payment and wallet module
+│                   ├── payment.service.ts            # Wallet operations, payout processing, and fraud checks
+│                   ├── payment.controller.ts         # Payment endpoints (balance, payout requests)
+│                   └── dto/                          # Payment-related DTOs
 │
 ├── services/                                         # Standalone background services & workers
 │   ├── asr-worker/                                   # Whisper / wav2vec transcription worker
