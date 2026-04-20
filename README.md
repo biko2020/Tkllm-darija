@@ -237,18 +237,22 @@ Tkllm-darija/
 │               │   ├── task.module.ts                # Task module with assignment logic
 │               │   ├── task.service.ts               # Task creation, assignment, and status management
 │               │   ├── task.controller.ts            # Task endpoints (list, assign, submit)
+│               │   ├── upload/
+│               │   │   └── upload.controller.ts
 │               │   └── dto/                          # Task-related DTOs
-│               │
-│               ├── data/                             # Dataset management and ingestion
-│               │   ├── data.module.ts                # Data module configuration
-│               │   ├── data.service.ts               # Dataset CRUD and ingestion orchestration
-│               │   ├── data.controller.ts            # Dataset endpoints and export management
-│               │   └── dto/
+│               │       └── generate-upload-url.dto.ts
 │               │
 │               ├── quality/                          # Quality scoring, validation, and review system
 │               │   ├── quality.module.ts             # Quality module configuration
 │               │   ├── quality.service.ts            # Scoring engine and review workflows
 │               │   ├── quality.controller.ts         # Quality review and scoring endpoints
+│               │   └── dto/
+│               │
+│               │
+│               ├── data/                             # Dataset management and ingestion
+│               │   ├── data.module.ts                # Data module configuration
+│               │   ├── data.service.ts               # Dataset CRUD and ingestion orchestration
+│               │   ├── data.controller.ts            # Dataset endpoints and export management
 │               │   └── dto/
 │               │
 │               └── payment/                          # Financial system: wallets, payouts, and transactions
