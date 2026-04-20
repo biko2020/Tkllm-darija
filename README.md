@@ -262,14 +262,23 @@ Tkllm-darija/
 │                   └── dto/                          # Payment-related DTOs
 │
 ├── services/                                         # Standalone background services & workers
-│   ├── asr-worker/                                   # Whisper / wav2vec transcription worker
-│   │   ├── README.md
-│   │   ├── .env
-│   │   ├── .env.example
-│   │   ├── package.json
-│   │   ├── src/
-│   │   ├── models/
-│   │   └── Dockerfile
+│   ├── asr-worker/                                   # Whisper-based speech-to-text transcription worker
+│   │   ├── README.md                                 # Documentation for the ASR worker service (architecture, scaling, and usage)
+│   │   ├── .env                                      # Local environment variables (gitignored)
+│   │   ├── .env.example                              # Template for all required environment variables
+│   │   ├── package.json                              # Service dependencies and scripts (Node.js wrapper + Python worker)
+│   │   ├── Dockerfile                                # Multi-stage Docker build with CUDA 12.1 support for GPU inference
+│   │   ├── src/                                      # Main source code for the worker
+│   │   │   ├── index.ts                              # Entry point - Kafka consumer bootstrap
+│   │   │   ├── consumer.ts                           # Kafka consumer for transcription.requested topic
+│   │   │   ├── processor.ts                          # Core transcription logic using Whisper
+│   │   │   ├── storage.ts                            # S3/MinIO download and upload utilities
+│   │   │   └── types.ts                              # Internal TypeScript interfaces
+│   │   └── models/                                   # ML model management and caching
+│   │       ├── whisper/                              # Whisper model loader and inference wrapper
+│   │       │   └── loader.py                         # Python script to load and run Whisper (small/large)
+│   │       └── cache/                                # Model cache directory (gitignored)
+│   │
 │   ├── data-pipeline/                                # ETL jobs (Prefect / Dagster)
 │   │   ├── .env
 │   │   ├── .env.example
