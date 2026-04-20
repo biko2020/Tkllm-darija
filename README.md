@@ -179,27 +179,41 @@ Tkllm-darija/
 │           │   ├── validation.schema.ts              # Joi/Zod schema for environment variables
 │           │   └── swagger.ts                        # Swagger/OpenAPI configuration
 │           │
-│           ├── common/                               # Shared cross-cutting concerns
-│           │   ├── index.ts
-│           │   ├── decorators/                       # Custom decorators (e.g., @CurrentUser, @Roles)
-│           │   │   └── roles.decorator.ts            # Custom @Roles decorator for role-based access control (RBAC).  
-│           │   ├── filters/                          # Global exception filters
-│           │   │   ├── all-exceptions.filter.ts
-│           │   │   └── http-exception.filter.ts 
+│           ├── common/                               # Shared cross-cutting concerns (used globally across the API)
+│           │   ├── index.ts                          # Barrel export file for all common utilities, guards, filters, interceptors, and pipes, utils
+│           │   │
+│           │   ├── decorators/                       # Custom decorators for controllers and handlers
+│           │   │   ├── roles.decorator.ts            # Custom @Roles decorator for role-based access control (RBAC)
+│           │   │   └── current-user.decorator.ts     # Extracts the authenticated user from the request context (@CurrentUser())
+│           │   │   
+│           │   │
+│           │   ├── filters/                          # Global exception filters for consistent error handling
+│           │   │   ├── all-exceptions.filter.ts      # Catches all exceptions (including runtime errors) and returns standardized error responses
+│           │   │   └── http-exception.filter.ts      # Specialized filter for HttpException instances with clean formatting
+│           │   │
 │           │   ├── guards/                           # Authentication and authorization guards
-│           │   │   ├── jwt-auth.guard.ts             # JWT authentication guard (extracts and validates token)
-│           │   │   ├── roles.guard.ts                # Role-based authorization guard (@Roles decorator)
-│           │   │   └── index.ts                      # Barrel export for easy imports
-│           │   ├── interceptors/                     # Logging, transformation, and timeout interceptors
-│           │   │   ├── logging.interceptor.ts  
-│           │   │   └── audit.interceptor.ts
-│           │   ├── pipes/                            # Custom validation pipes
-│           │   │   ├── parse-uuid.pipe.ts
-│           │   │   ├── validation.pipe.ts
-│           │   │   └── 
-│           │   └── utils/                            # Common utilities and helpers
+│           │   │   ├── jwt-auth.guard.ts             # JWT authentication guard — validates Bearer token and attaches user to request
+│           │   │   └── roles.guard.ts                # Role-based authorization guard — works with @Roles decorator
+│           │   │   
+│           │   │
+│           │   ├── interceptors/                     # Request/response interceptors for cross-cutting logic
+│           │   │   ├── logging.interceptor.ts        # Logs incoming requests and outgoing responses with timing and user context
+│           │   │   └── audit.interceptor.ts          # Automatically creates audit log entries for mutating operations (POST, PUT, DELETE)
+│           │   │
+│           │   ├── pipes/                            # Custom validation and transformation pipes
+│           │   │   ├── parse-uuid.pipe.ts            # Reusable pipe to validate and parse UUID strings
+│           │   │   └── validation.pipe.ts            # Enhanced global ValidationPipe with whitelist, transformation, and strict settings
+│           │   │   
+│           │   │
+│           │   └── utils/                            # Common utility functions and helpers
+│           │       ├── password.utils.ts             # Password hashing and comparison utilities
+│           │       └── date.utils.ts                 # Date/time helper functions (daysAgo, hoursAgo, etc.)
 │           │
 │           └── modules/                              # Feature-based modules (Domain-Driven structure)
+│               │   ├── health/                       # Health check module using @nestjs/terminus
+│               │   ├── health.module.ts              # Health module definition
+│               │   └── health.controller.ts          # /health endpoint with DB, HTTP, and system checks
+│               │
 │               ├── auth/
 │               │   ├── auth.module.ts
 │               │   ├── auth.service.ts
