@@ -274,10 +274,15 @@ Tkllm-darija/
 │   │   │   ├── processor.ts                          # Core transcription logic using Whisper
 │   │   │   ├── storage.ts                            # S3/MinIO download and upload utilities
 │   │   │   └── types.ts                              # Internal TypeScript interfaces
-│   │   └── models/                                   # ML model management and caching
-│   │       ├── whisper/                              # Whisper model loader and inference wrapper
-│   │       │   └── loader.py                         # Python script to load and run Whisper (small/large)
-│   │       └── cache/                                # Model cache directory (gitignored)
+│   │   └── models/                                   # ML model management and inference layer
+│   │       ├── README.md                             # Documentation for model loading, caching, and inference
+│   │       ├── whisper/                              # Whisper model integration (primary ASR engine)
+│   │       │   ├── loader.py                         # Python script to load and run Whisper model (supports small/large)
+│   │       │   ├── requirements.txt                  # Python dependencies (faster-whisper, torch, etc.)
+│   │       │   └── model_cache.py                    # Model caching and lazy loading logic
+│   │       │
+│   │       └── cache/                                # Local model cache directory (gitignored)
+│   │           └── .gitkeep                          # Placeholder to keep directory in git
 │   │
 │   ├── data-pipeline/                                # ETL jobs (Prefect / Dagster)
 │   │   ├── .env
@@ -285,18 +290,21 @@ Tkllm-darija/
 │   │   ├── package.json
 │   │   ├── flows/
 │   │   └── Dockerfile
+│   │
 │   ├── quality-engine/                               # Scoring, validation & active learning
 │   │   ├── .env
 │   │   ├── .env.example
 │   │   ├── package.json
 │   │   ├── src/
 │   │   └── Dockerfile
+│   │
 │   ├── analytics-service/                           # Contributor activity, data quality & growth metrics
 │   │   ├── .env
 │   │   ├── .env.example
 │   │   ├── package.json
 │   │   ├── src/
 │   │   └── Dockerfile
+│   │
 │   └── financial-service/                           # Payouts, wallet system, fraud detection
 │       ├── .env
 │       ├── .env.example
