@@ -167,6 +167,8 @@ Tkllm-darija/
 │       ├── package.json                              # API dependencies and scripts
 │       ├── Dockerfile                                # Docker image definition for the NestJS API
 │       ├── prisma/                                   # Prisma ORM schema and migrations
+│       │   ├── prisma.service.ts                     # Reusable Prisma client with lifecycle hooks
+│       │   ├── prisma.module.ts                      # Global Prisma module
 │       │   ├── schema.prisma                         # Main database schema definition
 │       │   ├── seed.ts                               # Prisma database seeder — creates realistic sample data for local development and testing
 │       │   └── migrations/                           # Auto-generated Prisma migration files
@@ -284,18 +286,25 @@ Tkllm-darija/
 │   │       └── cache/                                # Local model cache directory (gitignored)
 │   │           └── .gitkeep                          # Placeholder to keep directory in git
 │   │
+│   ├── quality-engine/                               # Quality scoring, validation, and active learning service
+│   │   ├── README.md                                 # Documentation for the quality engine architecture and scaling
+│   │   ├── .env                                      # Local environment variables (gitignored)
+│   │   ├── .env.example                              # Template for all required environment variables
+│   │   ├── package.json                              # Service dependencies and scripts
+│   │   ├── Dockerfile                                # Multi-stage Docker build optimized for CPU-heavy scoring
+│   │   └── src/                                      # Main source code for the quality engine
+│   │       ├── index.ts                              # Entry point - Kafka consumer bootstrap
+│   │       ├── consumer.ts                           # Kafka consumer for quality.review.requested topic
+│   │       ├── scorer.ts                             # Core scoring logic and multi-stage review pipeline
+│   │       ├── active-learning.ts                    # Active learning queue and sample selection logic
+│   │       ├── storage.ts                            # S3/MinIO integration for audio and metadata
+│   │       └── types.ts
+│   │
 │   ├── data-pipeline/                                # ETL jobs (Prefect / Dagster)
 │   │   ├── .env
 │   │   ├── .env.example
 │   │   ├── package.json
 │   │   ├── flows/
-│   │   └── Dockerfile
-│   │
-│   ├── quality-engine/                               # Scoring, validation & active learning
-│   │   ├── .env
-│   │   ├── .env.example
-│   │   ├── package.json
-│   │   ├── src/
 │   │   └── Dockerfile
 │   │
 │   ├── analytics-service/                           # Contributor activity, data quality & growth metrics
