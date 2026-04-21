@@ -314,15 +314,41 @@ Tkllm-darija/
 │   │   ├── src/
 │   │   └── Dockerfile
 │   │
-│   └── financial-service/                           # Payouts, wallet system, fraud detection
-│       ├── .env
-│       ├── .env.example
-│       ├── package.json
+│   └── financial-service/                          # Standalone async microservice: Payouts, Contributor Wallet, Fraud Detection
+│       ├── .env                                    # Environment variables (not committed)
+│       ├── .env.example                            # Template for environment variables
+│       ├── package.json                            # NPM package definition and scripts
 │       ├── src/
-│       │   ├── providers/                           # CMI, Orange Money, Inwi Money adapters
-│       │   ├── wallet/                              # Contributor wallet & balance management
-│       │   └── fraud/                               # Fraud detection rules & monitoring
-│       └── Dockerfile
+│       │   ├── index.ts                            # Main entry point – bootstraps Kafka consumer and starts the orchestrator
+│       │   ├── config/                             # Configuration management
+│       │   │   ├── configuration.ts                # Centralized typed configuration loader
+│       │   │   └── validation.schema.ts            # Schema validation (Zod) for environment variables
+│       │   ├── types/                              # Core TypeScript interfaces and types
+│       │   │   └── financial.types.ts              # Domain types: Payout, Transaction, FraudResult, etc.
+│       │   ├── providers/                          # Payment gateway adapters for Moroccan providers
+│       │   │   ├── base-provider.ts                # Abstract PaymentProvider interface
+│       │   │   ├── cmi-provider.ts                 # CMI (Interbank Monetary Center) payout adapter
+│       │   │   ├── orange-money-provider.ts        # Orange Money – OAuth2 + payout API
+│       │   │   └── inwi-money-provider.ts          # Inwi Money adapter
+│       │   ├── wallet/                             # Wallet domain logic
+│       │   │   ├── wallet.service.ts               # Balance management (credit/debit/getBalance)
+│       │   │   ├── ledger.service.ts               # Immutable double-entry accounting ledger
+│       │   │   └── index.ts                        # Module barrel exports
+│       │   ├── fraud/                              # Anti-fraud protection layer
+│       │   │   ├── fraud.service.ts                # Fraud detection service (orchestrates rules)
+│       │   │   ├── rules/                          # Pluggable fraud detection rules
+│       │   │   │   ├── velocity.rule.ts            # Rate limiting & velocity checks
+│       │   │   │   └── geo-anomaly.rule.ts         # Geo-location anomaly detection
+│       │   │   └── index.ts                        # Fraud module exports
+│       │   ├── events/                             # Event-driven communication via Kafka
+│       │   │   ├── consumer.ts                     # Consumes payout requests and wallet events
+│       │   │   └── producer.ts                     # Produces financial outcome events
+│       │   └── shared/                             # Cross-cutting utilities
+│       │       ├── idempotency.ts                  # Idempotent operation handling
+│       │       ├── logger.ts                       # Configured Winston logger instance
+│       │       └── retry.ts                        # Retry logic with exponential backoff
+│       └── Dockerfile                              # Multi-stage Docker build for production deployment
+│
 │
 ├── packages/                                        # Shared internal libraries (Turborepo monorepo packages)
 │   ├── types/                                       # Shared TypeScript types and interfaces used across the entire project
