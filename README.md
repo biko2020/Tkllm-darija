@@ -307,47 +307,84 @@ Tkllm-darija/
 │   │   ├── flows/
 │   │   └── Dockerfile
 │   │
-│   ├── analytics-service/                           # Contributor activity, data quality & growth metrics
-│   │   ├── .env
-│   │   ├── .env.example
-│   │   ├── package.json
-│   │   ├── src/
-│   │   └── Dockerfile
-│   │
-│   └── financial-service/                          # Standalone async microservice: Payouts, Contributor Wallet, Fraud Detection
-│       ├── .env                                    # Environment variables (not committed)
-│       ├── .env.example                            # Template for environment variables
-│       ├── package.json                            # NPM package definition and scripts
+│   ├── analytics-service/                            # Real-time analytics engine: Contributor activity, data quality & growth metrics
+│   │   ├── .env                                      # Environment variables (not committed)
+│   │   ├── .env.example                              # Template for required environment variables
+│   │   ├── package.json                              # Dependencies and scripts (includes Kafka, TimescaleDB, etc.)
+│   │   ├── Dockerfile                                # Multi-stage Docker build for the analytics service
+│   │   └── src/
+│   │       ├── index.ts                              # Service bootstrap: DB connection, Kafka consumer setup, and background jobs
+│   │       ├── config/
+│   │       │   ├── database.ts                       # TimescaleDB connection pool and hypertable configuration
+│   │       │   ├── configuration.ts                  # Centralized typed config loader
+│   │       │   └── validation.schema.ts              # Zod-based validation for all environment variables
+│   │       ├── types/
+│   │       │   └── analytics.types.ts                # Core domain types: Metric, EventPayload, ReportData, etc.
+│   │       ├── ingestion/
+│   │       │   ├── data-event.handler.ts             # Kafka consumer handler for raw data contribution events
+│   │       │   ├── quality-event.handler.ts          # Processes quality evaluation events and updates scores
+│   │       │   └── finance-event.handler.ts          # Syncs payout and wallet events into analytics
+│   │       ├── metrics/
+│   │       │   ├── dataset-growth.ts                 # Tracks dataset size growth, language coverage, and contributor trends
+│   │       │   ├── user-performance.ts               # Calculates contributor rankings, activity metrics, and streaks
+│   │       │   ├── quality-trends.ts                 # Monitors data quality evolution and improvement over time
+│   │       │   └── index.ts                          # Unified metrics facade / barrel file
+│   │       ├── reports/
+│   │       │   ├── daily-report.ts                   # Daily summary report generation and notifications
+│   │       │   ├── weekly-report.ts                  # Weekly insights, leaderboards, and executive summaries
+│   │       │   └── index.ts                          # Report scheduler and export utilities
+│   │       ├── timescale/
+│   │       │   ├── migrations/			      # SQL migrations for hypertables and continuous aggregates
+│   │       │   │   ├── 001_create_contributor_activity.sql
+│   │       │   │   ├── 002_create_platform_metrics.sql
+│   │       │   │   └── 003_create_datasets.sql
+│   │       │   └── views/			      # Optimized materialized views for high-performance analytics queries
+│   │       │       ├── contributor_activity_hourly.sql
+│   │       │       ├── contributor_activity_daily.sql
+│   │       │       ├── quality_trends_weekly.sql
+│   │       │       └── payouts_weekly.sql
+│   │       ├── api/
+│   │       │   ├── router.ts                         # API routing layer (internal admin endpoints: /admin/analytics)
+│   │       │   └── controllers.ts                    # Request handlers for metrics retrieval and report generation
+│   │       └── shared/
+│   │           ├── logger.ts                         # Structured logging configuration
+│   │           ├── date-bucket.ts                    # Helper for time-series bucketing (hourly, daily, weekly)
+│   │           └── retry.ts                          # Resilient retry mechanism for external calls and DB operations
+│   │    
+│   └── financial-service/                            # Standalone async microservice: Payouts, Contributor Wallet, Fraud Detection
+│       ├── .env                                      # Environment variables (not committed)
+│       ├── .env.example                              # Template for environment variables
+│       ├── package.json                              # NPM package definition and scripts
 │       ├── src/
-│       │   ├── index.ts                            # Main entry point – bootstraps Kafka consumer and starts the orchestrator
-│       │   ├── config/                             # Configuration management
-│       │   │   ├── configuration.ts                # Centralized typed configuration loader
-│       │   │   └── validation.schema.ts            # Schema validation (Zod) for environment variables
-│       │   ├── types/                              # Core TypeScript interfaces and types
-│       │   │   └── financial.types.ts              # Domain types: Payout, Transaction, FraudResult, etc.
-│       │   ├── providers/                          # Payment gateway adapters for Moroccan providers
-│       │   │   ├── base-provider.ts                # Abstract PaymentProvider interface
-│       │   │   ├── cmi-provider.ts                 # CMI (Interbank Monetary Center) payout adapter
-│       │   │   ├── orange-money-provider.ts        # Orange Money – OAuth2 + payout API
-│       │   │   └── inwi-money-provider.ts          # Inwi Money adapter
-│       │   ├── wallet/                             # Wallet domain logic
-│       │   │   ├── wallet.service.ts               # Balance management (credit/debit/getBalance)
-│       │   │   ├── ledger.service.ts               # Immutable double-entry accounting ledger
-│       │   │   └── index.ts                        # Module barrel exports
-│       │   ├── fraud/                              # Anti-fraud protection layer
-│       │   │   ├── fraud.service.ts                # Fraud detection service (orchestrates rules)
-│       │   │   ├── rules/                          # Pluggable fraud detection rules
-│       │   │   │   ├── velocity.rule.ts            # Rate limiting & velocity checks
-│       │   │   │   └── geo-anomaly.rule.ts         # Geo-location anomaly detection
-│       │   │   └── index.ts                        # Fraud module exports
-│       │   ├── events/                             # Event-driven communication via Kafka
-│       │   │   ├── consumer.ts                     # Consumes payout requests and wallet events
-│       │   │   └── producer.ts                     # Produces financial outcome events
-│       │   └── shared/                             # Cross-cutting utilities
-│       │       ├── idempotency.ts                  # Idempotent operation handling
-│       │       ├── logger.ts                       # Configured Winston logger instance
-│       │       └── retry.ts                        # Retry logic with exponential backoff
-│       └── Dockerfile                              # Multi-stage Docker build for production deployment
+│       │   ├── index.ts                              # Main entry point – bootstraps Kafka consumer and starts the orchestrator
+│       │   ├── config/                               # Configuration management
+│       │   │   ├── configuration.ts                  # Centralized typed configuration loader
+│       │   │   └── validation.schema.ts              # Schema validation (Zod) for environment variables
+│       │   ├── types/                                # Core TypeScript interfaces and types
+│       │   │   └── financial.types.ts                # Domain types: Payout, Transaction, FraudResult, etc.
+│       │   ├── providers/                            # Payment gateway adapters for Moroccan providers
+│       │   │   ├── base-provider.ts                  # Abstract PaymentProvider interface
+│       │   │   ├── cmi-provider.ts                   # CMI (Interbank Monetary Center) payout adapter
+│       │   │   ├── orange-money-provider.ts          # Orange Money – OAuth2 + payout API
+│       │   │   └── inwi-money-provider.ts            # Inwi Money adapter
+│       │   ├── wallet/                               # Wallet domain logic
+│       │   │   ├── wallet.service.ts                 # Balance management (credit/debit/getBalance)
+│       │   │   ├── ledger.service.ts                 # Immutable double-entry accounting ledger
+│       │   │   └── index.ts                          # Module barrel exports
+│       │   ├── fraud/                                # Anti-fraud protection layer
+│       │   │   ├── fraud.service.ts                  # Fraud detection service (orchestrates rules)
+│       │   │   ├── rules/                            # Pluggable fraud detection rules
+│       │   │   │   ├── velocity.rule.ts              # Rate limiting & velocity checks
+│       │   │   │   └── geo-anomaly.rule.ts           # Geo-location anomaly detection
+│       │   │   └── index.ts                          # Fraud module exports
+│       │   ├── events/                               # Event-driven communication via Kafka
+│       │   │   ├── consumer.ts                       # Consumes payout requests and wallet events
+│       │   │   └── producer.ts                       # Produces financial outcome events
+│       │   └── shared/                               # Cross-cutting utilities
+│       │       ├── idempotency.ts                    # Idempotent operation handling
+│       │       ├── logger.ts                         # Configured Winston logger instance
+│       │       └── retry.ts                          # Retry logic with exponential backoff
+│       └── Dockerfile                                # Multi-stage Docker build for production deployment
 │
 │
 ├── packages/                                        # Shared internal libraries (Turborepo monorepo packages)

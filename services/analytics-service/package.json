@@ -5,7 +5,7 @@
   "description": "Contributor activity, data quality & growth metrics",
   "scripts": {
     "dev":   "ts-node-dev --respawn src/main.ts",
-    "start": "node dist/main.js",
+    "start": "node dist/index.js",
     "build": "tsc",
     "test":  "jest",
     "lint":  "eslint \"src/**/*.ts\"",
