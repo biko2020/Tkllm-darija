@@ -1,0 +1,7 @@
+{
+  "id": "mock-sample-id",
+  "userId": "mock-user-id",
+  "transcript": "This is a mocked transcript",
+  "status": "submitted",
+  "language": "darija"
+}

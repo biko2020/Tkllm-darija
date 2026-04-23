@@ -1,0 +1,6 @@
+{
+  "id": "mock-user-id",
+  "email": "mockuser@example.com",
+  "role": "contributor",
+  "passwordHash": "hashed-password"
+}

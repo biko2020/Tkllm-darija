@@ -166,6 +166,37 @@ Tkllm-darija/
 │       ├── .env.example
 │       ├── package.json                              # API dependencies and scripts
 │       ├── Dockerfile                                # Docker image definition for the NestJS API
+│       ├── test/                                     # Centralized test suite
+│       │   ├── e2e/                                  # End-to-End tests (Testing full HTTP flows)
+│       │   │   ├── auth/                             # Login, Register, Token refresh
+│       │   │   │   └── auth.e2e-spec.ts             
+│       │   │   ├── samples/                          # Audio upload, transcript submission
+│       │   │   │   └── samples.e2e-spec.ts       
+│       │   │   ├── quality/                          # Quality review lifecycle
+│       │   │   │   └── quality.e2e-spec.ts  
+│       │   ├── integration/                          # Service + DB / Service + Kafka tests
+│       │   │   ├── prisma.integration-spec.ts
+│       │   │   └── kafka.integration-spec.ts
+│       │   ├── mocks/                                # Reusable mock data and services
+│       │   │   ├── data/
+│       │   │   │   ├── user.mock.json
+│       │   │   │   └── sample.mock.json
+│       │   │   ├── services/
+│       │   │   │   ├── kafka.service.mock.ts
+│       │   │   │   └── s3.service.mock.ts
+│       │   ├── utils/                                # Helper functions for tests
+│       │   │   ├── database-cleaner.ts               # Resets Prisma DB between tests
+│       │   │   ├── auth-headers.ts                   # Generates JWTs for test requests
+│       │   │   ├── seed-user.ts
+│       │   │   ├── seed-sample.ts
+│       │   │   ├── seed-task.ts
+│       │   │   ├── seed-quality.ts
+│       │   │   ├── seed-payment.ts
+│       │   │   └── app-instance.ts                   # Singleton for the NestJS TestingModule
+│       │   ├── jest-e2e.json                         # Jest config specific to E2E
+│       │   ├── setup.ts                              # Global setup (dotenv, global mocks, Testcontainers bootstrap)
+│       │   ├── jest.setup.ts                         # Global Jest setup hook
+│       │   └── teardown.ts                           # Cleanup containers after suite
 │       ├── prisma/                                   # Prisma ORM schema and migrations
 │       │   ├── prisma.service.ts                     # Reusable Prisma client with lifecycle hooks
 │       │   ├── prisma.module.ts                      # Global Prisma module
@@ -212,6 +243,7 @@ Tkllm-darija/
 │           │       └── date.utils.ts                 # Date/time helper functions (daysAgo, hoursAgo, etc.)
 │           │
 │           └── modules/                              # Feature-based modules (Domain-Driven Design structure)
+│               ├── *.spec.ts                         # Unit tests per module (80% coverage target)
 │               ├── health/                           # Health monitoring and readiness probes
 │               │   ├── health.module.ts              # Health module configuration with Terminus
 │               │   └── health.controller.ts          # /health endpoint with DB, HTTP, and system health checks
