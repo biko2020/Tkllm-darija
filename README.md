@@ -385,11 +385,12 @@ Tkllm-darija/
 │   │   └── test/
 │   │       ├── unit/
 │   │       │   ├── transformation.spec.ts           # cleaning logic
-│   │       │   └── regex.spec.ts
+│   │       │   └── regex.spec.ts                    # Regex validation
 │   │       │
-│   │       └── integration/
-│   │           ├── api.spec.ts                      # external APIs
-│   │           └── database.spec.ts
+│   │       ├── integration/
+│   │       │   ├── api.spec.ts                      # External API calls
+│   │       │   └── database.spec.ts                 # DB ingestion/export
+│   │       └── setup.ts                             # Service-specific test config
 │   │
 │   ├── analytics-service/                            # Real-time analytics engine: Contributor activity, data quality & growth metrics
 │   │   ├── .env                                      # Environment variables (not committed)
