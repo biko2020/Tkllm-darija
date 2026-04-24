@@ -359,19 +359,20 @@ Tkllm-darija/
 │   │   │   └── types.ts
 │   │   └── test/
 │   │       ├── unit/
-│   │       │   ├── scorer.spec.ts                    # scoring logic
-│   │       │   ├── heuristics.spec.ts                # rules validation
-│   │       │   └── active-learning.spec.ts
+│   │       │   ├── scorer.spec.ts                    # Core scoring logic
+│   │       │   ├── heuristics.spec.ts                # Rule validation (thresholds, filters)
+│   │       │   └── active-learning.spec.ts           # Queue and sample selection
 │   │       │
 │   │       ├── integration/
 │   │       │   ├── weaviate.spec.ts                  # vector DB tests
-│   │       │   └── storage.spec.ts
+│   │       │   └── storage.spec.ts                   # S3/MinIO integration
 │   │       │
 │   │       ├── e2e/
 │   │       │   └── review-flow.spec.ts               # Request → Score → Decision
 │   │       │
-│   │       └── utils/
-│   │           └── scoring.mock.ts
+│   │       ├── utils/
+│   │       │   └── scoring.mock.ts                  # Mock scoring functions and fixtures
+│   │       └── setup.ts                             # Service-specific test config
 │   │
 │   ├── data-pipeline/                                # ETL jobs (Prefect / Dagster)
 │   │   ├── .env
