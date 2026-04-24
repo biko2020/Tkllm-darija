@@ -174,9 +174,14 @@ Tkllm-darija/
 │       │   │   │   └── samples.e2e-spec.ts       
 │       │   │   ├── quality/                          # Quality review lifecycle
 │       │   │   │   └── quality.e2e-spec.ts  
+│       │   │   ├── payments/                         # Wallet + payout flows
+│       │   │   │   └──
+│       │   │   └── jest-e2e.json                     # Jest config for orchestration
+│       │   │      
 │       │   ├── integration/                          # Service + DB / Service + Kafka tests
 │       │   │   ├── prisma.integration-spec.ts
-│       │   │   └── kafka.integration-spec.ts
+│       │   │   ├── kafka.integration-spec.ts
+│       │   │   └── redis.integration-spec.ts         # Redis cache integration
 │       │   ├── mocks/                                # Reusable mock data and services
 │       │   │   ├── data/
 │       │   │   │   ├── user.mock.json
@@ -193,7 +198,8 @@ Tkllm-darija/
 │       │   │   ├── seed-quality.ts
 │       │   │   ├── seed-payment.ts
 │       │   │   └── app-instance.ts                   # Singleton for the NestJS TestingModule
-│       │   ├── jest-e2e.json                         # Jest config specific to E2E
+│       │   ├── smoke/ 
+│       │   │   └── 
 │       │   ├── setup.ts                              # Global setup (dotenv, global mocks, Testcontainers bootstrap)
 │       │   ├── jest.setup.ts                         # Global Jest setup hook
 │       │   └── teardown.ts                           # Cleanup containers after suite
@@ -308,15 +314,35 @@ Tkllm-darija/
 │   │   │   ├── processor.ts                          # Core transcription logic using Whisper
 │   │   │   ├── storage.ts                            # S3/MinIO download and upload utilities
 │   │   │   └── types.ts                              # Internal TypeScript interfaces
-│   │   └── models/                                   # ML model management and inference layer
-│   │       ├── README.md                             # Documentation for model loading, caching, and inference
-│   │       ├── whisper/                              # Whisper model integration (primary ASR engine)
-│   │       │   ├── loader.py                         # Python script to load and run Whisper model (supports small/large)
-│   │       │   ├── requirements.txt                  # Python dependencies (faster-whisper, torch, etc.)
-│   │       │   └── model_cache.py                    # Model caching and lazy loading logic
+│   │   ├── models/                                   # ML model management and inference layer
+│   │   │   ├── README.md                             # Documentation for model loading, caching, and inference
+│   │   │   ├── whisper/                              # Whisper model integration (primary ASR engine)
+│   │   │   │   ├── loader.py                         # Python script to load and run Whisper model (supports small/large)
+│   │   │   │   ├── requirements.txt                  # Python dependencies (faster-whisper, torch, etc.)
+│   │   │   │   └── model_cache.py                    # Model caching and lazy loading logic
+│   │   │   │
+│   │   │   └── cache/                                # Local model cache directory (gitignored)
+│   │   │       └── .gitkeep                          # Placeholder to keep directory in git
+│   │   └── test/                                     # ASR test suite
+│   │       ├── unit/                                 # Pure function & logic tests
+│   │       │   ├── processor.unit-spec.ts            # Tests for transcription logic
+│   │       │   ├── storage.unit-spec.ts              # Tests for S3 utilities
+│   │       │   └── types.unit-spec.ts                # Validation of internal types
 │   │       │
-│   │       └── cache/                                # Local model cache directory (gitignored)
-│   │           └── .gitkeep                          # Placeholder to keep directory in git
+│   │       ├── integration/                          # Service + broker/storage mocks
+│   │       │   ├── kafka.integration-spec.ts         # Kafka consumer/producer mocked tests
+│   │       │   ├── s3.integration-spec.ts            # Mocked S3/MinIO integration
+│   │       │   └── whisper.integration-spec.ts       # Whisper model loading (mocked GPU)
+│   │       │
+│   │       ├── e2e/                                  # End-to-End flows for the worker
+│   │       │   └── transcription.e2e-spec.ts         # Full flow: consume → process → upload
+│   │       │
+│   │       ├── utils/                                # Helper functions for tests
+│   │       │   ├── kafka.mock.ts                     # Mock Kafka producer/consumer
+│   │       │   ├── s3.mock.ts                        # Mock S3 client
+│   │       │   ├── whisper.stub.ts 
+│   │       │   └── sample-audio.ts                   # Fixture audio file for tests
+│   │       └── setup.ts                              # Service-specific test config (dotenv, DI overrides)
 │   │
 │   ├── quality-engine/                               # Quality scoring, validation, and active learning service
 │   │   ├── README.md                                 # Documentation for the quality engine architecture and scaling
@@ -324,69 +350,110 @@ Tkllm-darija/
 │   │   ├── .env.example                              # Template for all required environment variables
 │   │   ├── package.json                              # Service dependencies and scripts
 │   │   ├── Dockerfile                                # Multi-stage Docker build optimized for CPU-heavy scoring
-│   │   └── src/                                      # Main source code for the quality engine
-│   │       ├── index.ts                              # Entry point - Kafka consumer bootstrap
-│   │       ├── consumer.ts                           # Kafka consumer for quality.review.requested topic
-│   │       ├── scorer.ts                             # Core scoring logic and multi-stage review pipeline
-│   │       ├── active-learning.ts                    # Active learning queue and sample selection logic
-│   │       ├── storage.ts                            # S3/MinIO integration for audio and metadata
-│   │       └── types.ts
+│   │   ├── src/                                      # Main source code for the quality engine
+│   │   │   ├── index.ts                              # Entry point - Kafka consumer bootstrap
+│   │   │   ├── consumer.ts                           # Kafka consumer for quality.review.requested topic
+│   │   │   ├── scorer.ts                             # Core scoring logic and multi-stage review pipeline
+│   │   │   ├── active-learning.ts                    # Active learning queue and sample selection logic
+│   │   │   ├── storage.ts                            # S3/MinIO integration for audio and metadata
+│   │   │   └── types.ts
+│   │   └── test/
+│   │       ├── unit/
+│   │       │   ├── scorer.spec.ts                    # scoring logic
+│   │       │   ├── heuristics.spec.ts                # rules validation
+│   │       │   └── active-learning.spec.ts
+│   │       │
+│   │       ├── integration/
+│   │       │   ├── weaviate.spec.ts                  # vector DB tests
+│   │       │   └── storage.spec.ts
+│   │       │
+│   │       ├── e2e/
+│   │       │   └── review-flow.spec.ts               # Request → Score → Decision
+│   │       │
+│   │       └── utils/
+│   │           └── scoring.mock.ts
 │   │
 │   ├── data-pipeline/                                # ETL jobs (Prefect / Dagster)
 │   │   ├── .env
 │   │   ├── .env.example
 │   │   ├── package.json
+│   │   ├── Dockerfile
 │   │   ├── flows/
-│   │   └── Dockerfile
+│   │   │   ├── cleaning.flow.ts
+│   │   │   └── export.flow.ts
+│   │   └── test/
+│   │       ├── unit/
+│   │       │   ├── transformation.spec.ts           # cleaning logic
+│   │       │   └── regex.spec.ts
+│   │       │
+│   │       └── integration/
+│   │           ├── api.spec.ts                      # external APIs
+│   │           └── database.spec.ts
 │   │
 │   ├── analytics-service/                            # Real-time analytics engine: Contributor activity, data quality & growth metrics
 │   │   ├── .env                                      # Environment variables (not committed)
 │   │   ├── .env.example                              # Template for required environment variables
 │   │   ├── package.json                              # Dependencies and scripts (includes Kafka, TimescaleDB, etc.)
 │   │   ├── Dockerfile                                # Multi-stage Docker build for the analytics service
-│   │   └── src/
-│   │       ├── index.ts                              # Service bootstrap: DB connection, Kafka consumer setup, and background jobs
-│   │       ├── config/
-│   │       │   ├── database.ts                       # TimescaleDB connection pool and hypertable configuration
-│   │       │   ├── configuration.ts                  # Centralized typed config loader
-│   │       │   └── validation.schema.ts              # Zod-based validation for all environment variables
-│   │       ├── types/
-│   │       │   └── analytics.types.ts                # Core domain types: Metric, EventPayload, ReportData, etc.
-│   │       ├── ingestion/
-│   │       │   ├── data-event.handler.ts             # Kafka consumer handler for raw data contribution events
-│   │       │   ├── quality-event.handler.ts          # Processes quality evaluation events and updates scores
-│   │       │   └── finance-event.handler.ts          # Syncs payout and wallet events into analytics
-│   │       ├── metrics/
-│   │       │   ├── dataset-growth.ts                 # Tracks dataset size growth, language coverage, and contributor trends
-│   │       │   ├── user-performance.ts               # Calculates contributor rankings, activity metrics, and streaks
-│   │       │   ├── quality-trends.ts                 # Monitors data quality evolution and improvement over time
-│   │       │   └── index.ts                          # Unified metrics facade / barrel file
-│   │       ├── reports/
-│   │       │   ├── daily-report.ts                   # Daily summary report generation and notifications
-│   │       │   ├── weekly-report.ts                  # Weekly insights, leaderboards, and executive summaries
-│   │       │   └── index.ts                          # Report scheduler and export utilities
-│   │       ├── timescale/
-│   │       │   ├── migrations/			      # SQL migrations for hypertables and continuous aggregates
-│   │       │   │   ├── 001_create_contributor_activity.sql
-│   │       │   │   ├── 002_create_platform_metrics.sql
-│   │       │   │   └── 003_create_datasets.sql
-│   │       │   └── views/			      # Optimized materialized views for high-performance analytics queries
-│   │       │       ├── contributor_activity_hourly.sql
-│   │       │       ├── contributor_activity_daily.sql
-│   │       │       ├── quality_trends_weekly.sql
-│   │       │       └── payouts_weekly.sql
-│   │       ├── api/
-│   │       │   ├── router.ts                         # API routing layer (internal admin endpoints: /admin/analytics)
-│   │       │   └── controllers.ts                    # Request handlers for metrics retrieval and report generation
-│   │       └── shared/
-│   │           ├── logger.ts                         # Structured logging configuration
-│   │           ├── date-bucket.ts                    # Helper for time-series bucketing (hourly, daily, weekly)
-│   │           └── retry.ts                          # Resilient retry mechanism for external calls and DB operations
+│   │   ├── src/
+│   │   │   ├── index.ts                              # Service bootstrap: DB connection, Kafka consumer setup, and background jobs
+│   │   │   ├── config/
+│   │   │   │   ├── database.ts                       # TimescaleDB connection pool and hypertable configuration
+│   │   │   │   ├── configuration.ts                  # Centralized typed config loader
+│   │   │   │   └── validation.schema.ts              # Zod-based validation for all environment variables
+│   │   │   ├── types/
+│   │   │   │   └── analytics.types.ts                # Core domain types: Metric, EventPayload, ReportData, etc.
+│   │   │   ├── ingestion/
+│   │   │   │   ├── data-event.handler.ts             # Kafka consumer handler for raw data contribution events
+│   │   │   │   ├── quality-event.handler.ts          # Processes quality evaluation events and updates scores
+│   │   │   │   └── finance-event.handler.ts          # Syncs payout and wallet events into analytics
+│   │   │   ├── metrics/
+│   │   │   │   ├── dataset-growth.ts                 # Tracks dataset size growth, language coverage, and contributor trends
+│   │   │   │   ├── user-performance.ts               # Calculates contributor rankings, activity metrics, and streaks
+│   │   │   │   ├── quality-trends.ts                 # Monitors data quality evolution and improvement over time
+│   │   │   │   └── index.ts                          # Unified metrics facade / barrel file
+│   │   │   ├── reports/
+│   │   │   │   ├── daily-report.ts                   # Daily summary report generation and notifications
+│   │   │   │   ├── weekly-report.ts                  # Weekly insights, leaderboards, and executive summaries
+│   │   │   │   └── index.ts                          # Report scheduler and export utilities
+│   │   │   ├── timescale/
+│   │   │   │   ├── migrations/			      # SQL migrations for hypertables and continuous aggregates
+│   │   │   │   │   ├── 001_create_contributor_activity.sql
+│   │   │   │   │   ├── 002_create_platform_metrics.sql
+│   │   │   │   │   └── 003_create_datasets.sql
+│   │   │   │   └── views/			      # Optimized materialized views for high-performance analytics queries
+│   │   │   │       ├── contributor_activity_hourly.sql
+│   │   │   │       ├── contributor_activity_daily.sql
+│   │   │   │       ├── quality_trends_weekly.sql
+│   │   │   │       └── payouts_weekly.sql
+│   │   │   ├── api/
+│   │   │   │   ├── router.ts                         # API routing layer (internal admin endpoints: /admin/analytics)
+│   │   │   │   └── controllers.ts                    # Request handlers for metrics retrieval and report generation
+│   │   │   └── shared/
+│   │   │       ├── logger.ts                         # Structured logging configuration
+│   │   │       ├── date-bucket.ts                    # Helper for time-series bucketing (hourly, daily, weekly)
+│   │   │       └── retry.ts                          # Resilient retry mechanism for external calls and DB operations
+│   │   └── test/
+│   │       ├── unit/
+│   │       │   ├── date-bucket.spec.ts                # time grouping
+│   │       │   ├── metrics-calculation.spec.ts
+│   │       │   └── growth.spec.ts
+│   │       │
+│   │       ├── integration/
+│   │       │   ├── timescale.spec.ts                  # hypertables & aggregates
+│   │       │   └── ingestion.spec.ts
+│   │       │
+│   │       ├── e2e/
+│   │       │   └── data-sync.spec.ts                  # event → aggregate
+│   │       │
+│   │       └── utils/
+│   │           └── timeseries.generator.ts
 │   │    
 │   └── financial-service/                            # Standalone async microservice: Payouts, Contributor Wallet, Fraud Detection
 │       ├── .env                                      # Environment variables (not committed)
 │       ├── .env.example                              # Template for environment variables
 │       ├── package.json                              # NPM package definition and scripts
+│       ├── Dockerfile                                # Multi-stage Docker build for production deployment
 │       ├── src/
 │       │   ├── index.ts                              # Main entry point – bootstraps Kafka consumer and starts the orchestrator
 │       │   ├── config/                               # Configuration management
@@ -416,7 +483,26 @@ Tkllm-darija/
 │       │       ├── idempotency.ts                    # Idempotent operation handling
 │       │       ├── logger.ts                         # Configured Winston logger instance
 │       │       └── retry.ts                          # Retry logic with exponential backoff
-│       └── Dockerfile                                # Multi-stage Docker build for production deployment
+│       └── test/
+│           ├── unit/
+│           │   ├── wallet.service.spec.ts            # credit/debit logic
+│           │   ├── ledger.service.spec.ts            # double-entry validation
+│           │   ├── fraud.service.spec.ts
+│           │   └── rules/
+│           │       ├── velocity.rule.spec.ts
+│           │       └── geo-anomaly.rule.spec.ts
+│           │
+│           ├── integration/
+│           │   ├── postgres-ledger.spec.ts           # DB transactions
+│           │   ├── providers.spec.ts                 # CMI / Orange / Inwi
+│           │   └── kafka-events.spec.ts
+│           │
+│           ├── e2e/
+│           │   └── payout-flow.spec.ts               # Event → Fraud → Provider
+│           │
+│           └── utils/
+│               ├── provider.mock.ts
+│               └── transaction.factory.ts 
 │
 │
 ├── packages/                                        # Shared internal libraries (Turborepo monorepo packages)
