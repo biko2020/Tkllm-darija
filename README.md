@@ -356,12 +356,21 @@ Tkllm-darija/
 │   │   │   ├── scorer.ts                             # Core scoring logic and multi-stage review pipeline
 │   │   │   ├── active-learning.ts                    # Active learning queue and sample selection logic
 │   │   │   ├── storage.ts                            # S3/MinIO integration for audio and metadata
-│   │   │   └── types.ts
+│   │   │   ├── types.ts
+│   │   │   └── validators/                           # Collection of modular validation logic for dataset quality checks
+│   │   │       ├── audioQualityValidator.ts          # Ensures audio files meet minimum quality standards (SNR, clipping, silence)
+│   │   │       ├── transcriptionValidator.ts         # Validates transcript confidence and length against thresholds
+│   │   │       ├── metadataValidator.ts              # Checks contributor metadata completeness and consent compliance
+│   │   │       └── index.ts                          # Central export hub for all validator modules
 │   │   └── test/
 │   │       ├── unit/
 │   │       │   ├── scorer.spec.ts                    # Core scoring logic
 │   │       │   ├── heuristics.spec.ts                # Rule validation (thresholds, filters)
-│   │       │   └── active-learning.spec.ts           # Queue and sample selection
+│   │       │   ├── active-learning.spec.ts           # Queue and sample selection
+│   │       │   └── validators/
+│   │       │       ├── audioQualityValidator.spec.ts
+│   │       │       ├── transcriptionValidator.spec.ts
+│   │       │       └── metadataValidator.spec.ts
 │   │       │
 │   │       ├── integration/
 │   │       │   ├── weaviate.spec.ts                  # vector DB tests
@@ -378,7 +387,7 @@ Tkllm-darija/
 │   │   ├── .env
 │   │   ├── .env.example
 │   │   ├── package.json
-│   │   ├── Dockerfile
+│   │   ├── Dockerfile 
 │   │   ├── flows/
 │   │   │   ├── cleaning.flow.ts
 │   │   │   └── export.flow.ts
